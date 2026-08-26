@@ -1,0 +1,577 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap');
+
+:root {
+  /* HSL Color System */
+  --bg-main: hsl(222, 47%, 11%);
+  --bg-gradient: linear-gradient(135deg, hsl(222, 47%, 11%) 0%, hsl(223, 39%, 7%) 100%);
+  --panel-bg: rgba(30, 41, 59, 0.7);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-hover: rgba(255, 255, 255, 0.12);
+  
+  --text-primary: hsl(210, 40%, 96%);
+  --text-secondary: hsl(215, 20%, 65%);
+  --text-muted: hsl(215, 15%, 45%);
+  
+  --primary: hsl(217, 91%, 60%);
+  --primary-hover: hsl(217, 91%, 68%);
+  --primary-glow: rgba(59, 130, 246, 0.35);
+  
+  /* Status Colors */
+  --color-good: hsl(150, 84%, 37%);       /* 25%未満: 良好 (緑) */
+  --color-normal: hsl(45, 93%, 47%);      /* 25-35%: 通常 (黄) */
+  --color-warning: hsl(25, 95%, 53%);     /* 35-45%: 注意 (オレンジ) */
+  --color-danger: hsl(350, 89%, 60%);     /* 45%以上: 要改善 (赤) */
+  
+  /* Glassmorphism Shadows */
+  --shadow-lg: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-sm: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Font Family */
+  --font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  --font-size-base: 14px;
+}
+
+/* 厨房用大きめ文字モード */
+body.large-text {
+  --font-size-base: 18px;
+}
+
+body.large-text input,
+body.large-text select,
+body.large-text button,
+body.large-text textarea {
+  font-size: 1.1em;
+}
+
+body.large-text table th,
+body.large-text table td {
+  padding: 16px 20px;
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  background: var(--bg-main);
+  background-image: var(--bg-gradient);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* App Container Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  max-height: 100vh;
+  transition: padding var(--transition-normal);
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  .main-content {
+    padding: 10px;
+    max-height: none;
+    overflow: visible;
+  }
+  .glass-panel {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+}
+
+/* Sidebar Responsive Styles */
+.sidebar {
+  width: 260px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  padding: 24px 16px;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 0 8px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    flex-direction: row;
+    padding: 8px;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    justify-content: space-around;
+    overflow-x: auto;
+  }
+  .sidebar-logo {
+    display: none; /* Hide logo on mobile bottom nav */
+  }
+  .sidebar-footer {
+    display: none; /* Hide settings on bottom nav */
+  }
+  .sidebar-nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .sidebar-link {
+    flex-direction: column;
+    padding: 8px 4px !important;
+    font-size: 0.7rem !important;
+    gap: 4px !important;
+    border-left: none !important;
+    border-bottom: 3px solid transparent;
+    border-radius: 8px !important;
+    min-width: 70px;
+    justify-content: center;
+    align-items: center;
+    text-align: center !important;
+  }
+  .sidebar-link.active {
+    border-bottom-color: var(--primary) !important;
+  }
+  .sidebar-link span {
+    white-space: nowrap;
+  }
+  /* Offset main content so it doesn't get hidden behind bottom nav */
+  .app-container {
+    padding-bottom: 70px; 
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Common UI Elements: Glass Panel */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  transition: transform var(--transition-normal), border-color var(--transition-fast);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Interactive elements */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-color: var(--panel-border);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Excel-like Table Design */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--panel-border);
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.excel-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95em;
+}
+
+.excel-table th {
+  background: rgba(30, 41, 59, 0.9);
+  padding: 12px 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--panel-border);
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.05em;
+}
+
+.excel-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  transition: background var(--transition-fast);
+}
+
+.excel-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.excel-table tr.category-row td {
+  background: rgba(59, 130, 246, 0.1);
+  font-weight: 700;
+  color: var(--primary-hover);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive Table for Mobile */
+@media (max-width: 768px) {
+  .table-wrapper {
+    background: transparent;
+    border: none;
+  }
+  .excel-table {
+    display: block;
+  }
+  .excel-table thead {
+    display: none; /* Hide table headers */
+  }
+  .excel-table tbody, .excel-table tr, .excel-table td {
+    display: block;
+    width: 100%;
+  }
+  .excel-table tr {
+    margin-bottom: 16px;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--panel-border);
+    padding: 12px;
+  }
+  .excel-table td {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .excel-table td:last-child {
+    border-bottom: none;
+  }
+  /* Card view for mobile */
+  .excel-table tr.category-row td {
+    background: transparent;
+    border-bottom: none;
+    font-size: 1.1em;
+  }
+}
+
+/* Input Styles */
+.input-control {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.input-control[readonly] {
+  background: rgba(30, 41, 59, 0.3);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+/* Table Inline Editable Inputs */
+.table-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 6px 10px;
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  transition: all var(--transition-fast);
+  font-size: 1em;
+}
+
+.table-input:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.table-input:focus {
+  outline: none;
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+/* Cost Rate Alerts Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cost-rate-good {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-good);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.cost-rate-normal {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-normal);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cost-rate-warning {
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--color-warning);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.cost-rate-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Cost rate highlight row styles */
+tr.row-cost-danger td {
+  background: rgba(239, 68, 68, 0.04);
+}
+tr.row-cost-warning td {
+  background: rgba(249, 115, 22, 0.02);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Search bar / filter row layout */
+.filter-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-item-sm {
+  width: 150px;
+}
+
+/* Mobile responsive grids */
+.mobile-stack {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .mobile-stack {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Disable horizontal scrolling for grids on mobile */
+  div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Better spacing for staff view */
+  .glass-panel {
+    padding: 16px;
+  }
+}
+
+/* A4 Print Layout */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt !important;
+  }
+  
+  .sidebar,
+  .no-print,
+  button,
+  .btn,
+  .filter-row,
+  .tabs,
+  .print-controls {
+    display: none !important;
+  }
+  
+  .main-content {
+    padding: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  .glass-panel {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+    color: #000 !important;
+    backdrop-filter: none !important;
+  }
+  
+  .excel-table {
+    border: 1px solid #000 !important;
+    color: #000 !important;
+  }
+  
+  .excel-table th {
+    background: #f0f0f0 !important;
+    color: #000 !important;
+    border-bottom: 1px solid #000 !important;
+  }
+  
+  .excel-table td {
+    color: #000 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+  
+  /* レシピ印刷用の改ページ制御 */
+  .recipe-print-container {
+    page-break-after: always;
+  }
+  
+  /* 印刷で表示したくない項目 (例: 隠し原価) */
+  .print-hide {
+    display: none !important;
+  }
+}
