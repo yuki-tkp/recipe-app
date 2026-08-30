@@ -49,7 +49,8 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
 
   const [newInstruction, setNewInstruction] = useState('');
   const [newIngredientSearch, setNewIngredientSearch] = useState('');
-  const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
+  const [newIngredientType, setNewIngredientType] = useState<'ingredient' | 'prep'>('ingredient');
+  const [selectedIngredient, setSelectedIngredient] = useState<{ id: string; name: string; unit: string } | null>(null);
   const [newIngredientQty, setNewIngredientQty] = useState(1);
   const [newIngredientUnit, setNewIngredientUnit] = useState('g');
 
@@ -159,11 +160,13 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     setFormPrep({ ...formPrep, instructions: updated });
   };
 
-  // 食材検索候補の取得
+  // 食材・仕込み検索候補の取得
   const ingredientSuggestions = newIngredientSearch.trim()
-    ? ingredients.filter(ing => 
-        ing.name.toLowerCase().includes(newIngredientSearch.toLowerCase()) && ing.status === 'active'
-      ).slice(0, 5)
+    ? newIngredientType === 'ingredient'
+      ? ingredients.filter(ing => 
+          ing.name.toLowerCase().includes(newIngredientSearch.toLowerCase()) && ing.status === 'active'
+        ).slice(0, 5)
+      : preps.filter(prep => prep.name.toLowerCase().includes(newIngredientSearch.toLowerCase())).slice(0, 5)
     : [];
 
   // 食材追加
@@ -172,14 +175,19 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     
     if (selectedIngredient) {
       // 重複チェック
-      const exists = formPrep.items.some(item => item.ingredientId === selectedIngredient.id);
+      const exists = formPrep.items.some(item => 
+        (newIngredientType === 'ingredient' && item.ingredientId === selectedIngredient.id && (!item.type || item.type === 'ingredient')) ||
+        (newIngredientType === 'prep' && item.prepId === selectedIngredient.id && item.type === 'prep')
+      );
       if (exists) {
-        alert('すでに登録されている食材です。');
+        alert('すでに登録されている材料です。');
         return;
       }
 
       const newItem: PrepItem = {
-        ingredientId: selectedIngredient.id,
+        type: newIngredientType,
+        ingredientId: newIngredientType === 'ingredient' ? selectedIngredient.id : null,
+        prepId: newIngredientType === 'prep' ? selectedIngredient.id : null,
         quantity: newIngredientQty,
         unit: newIngredientUnit,
         rawText: `${selectedIngredient.name}${newIngredientQty}${newIngredientUnit}`,
@@ -193,7 +201,9 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     } else {
       const customName = newIngredientSearch.trim();
       const newItem: PrepItem = {
+        type: 'custom',
         ingredientId: null,
+        prepId: null,
         customName: customName,
         quantity: newIngredientQty,
         unit: newIngredientUnit,
@@ -223,21 +233,38 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     return categories.find(c => c.id === id)?.name || '未分類';
   };
 
-  const getIngredientName = (id: string | null, customName?: string) => {
-    if (!id) return customName || '不明な食材';
-    return ingredients.find(ing => ing.id === id)?.name || '不明な食材';
+  const getIngredientName = (item: PrepItem) => {
+    if (item.type === 'custom') return item.customName || '不明な材料';
+    if (item.type === 'prep') {
+      return preps.find(p => p.id === item.prepId)?.name || '不明な仕込み';
+    }
+    // Backward compatibility or explicitly type='ingredient'
+    if (!item.ingredientId) return item.customName || '不明な材料';
+    return ingredients.find(ing => ing.id === item.ingredientId)?.name || '不明な材料';
   };
 
-  const getIngredientUnitCost = (id: string | null) => {
-    if (!id) return 0;
-    return ingredients.find(ing => ing.id === id)?.unitCost || 0;
+  const getIngredientUnitCost = (item: PrepItem) => {
+    if (item.type === 'prep') {
+      return preps.find(p => p.id === item.prepId)?.unitCost || 0;
+    }
+    if (!item.ingredientId) return 0;
+    return ingredients.find(ing => ing.id === item.ingredientId)?.unitCost || 0;
   };
 
   // 単位換算後の小計計算
   const calculateItemCost = (item: PrepItem) => {
-    if (!item.ingredientId) return 0;
-    const ing = ingredients.find(i => i.id === item.ingredientId);
-    if (!ing) return 0;
+    let unitCost = 0;
+    
+    if (item.type === 'prep') {
+      const p = preps.find(p => p.id === item.prepId);
+      if (!p) return 0;
+      unitCost = p.unitCost;
+    } else {
+      if (!item.ingredientId) return 0;
+      const ing = ingredients.find(i => i.id === item.ingredientId);
+      if (!ing) return 0;
+      unitCost = ing.unitCost;
+    }
     
     // 単位変換
     const u = item.unit.toLowerCase().trim();
@@ -245,7 +272,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     if (u === 'kg' || u === 'ｋｇ') baseQty = item.quantity * 1000;
     else if (u === 'l' || u === 'ｌ') baseQty = item.quantity * 1000;
     
-    return baseQty * ing.unitCost;
+    return baseQty * unitCost;
   };
 
   // 現在編集中の仕込みの仮の総原価・単位原価計算
@@ -559,11 +586,24 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                 {/* 材料のサジェスト追加フォーム */}
                 {canEdit && (
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', position: 'relative' }}>
+                    <select 
+                      className="input-control" 
+                      style={{ width: '100px' }}
+                      value={newIngredientType}
+                      onChange={e => {
+                        setNewIngredientType(e.target.value as 'ingredient' | 'prep');
+                        setNewIngredientSearch('');
+                        setSelectedIngredient(null);
+                      }}
+                    >
+                      <option value="ingredient">食材</option>
+                      <option value="prep">仕込み</option>
+                    </select>
                     <div style={{ flex: 2, minWidth: '180px' }}>
                       <input 
                         type="text" 
                         className="input-control" 
-                        placeholder="食材名で検索して選択..." 
+                        placeholder="食材・仕込み名で検索して選択..." 
                         value={newIngredientSearch}
                         onChange={e => {
                           setNewIngredientSearch(e.target.value);
@@ -573,7 +613,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                       {/* サジェストリスト */}
                       {ingredientSuggestions.length > 0 && (
                         <div style={{
-                          position: 'absolute', top: '44px', left: 0, width: '100%', background: '#1e293b',
+                          position: 'absolute', top: '44px', left: '110px', right: 0, background: '#1e293b',
                           border: '1px solid var(--panel-border)', borderRadius: '6px', zIndex: 10,
                           boxShadow: 'var(--shadow-lg)', overflow: 'hidden'
                         }}>
@@ -581,7 +621,11 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                             <div 
                               key={ing.id}
                               onClick={() => {
-                                setSelectedIngredient(ing);
+                                setSelectedIngredient({
+                                  id: ing.id,
+                                  name: ing.name,
+                                  unit: newIngredientType === 'ingredient' ? (ing as Ingredient).purchaseUnit : (ing as Prep).yieldUnit
+                                });
                                 setNewIngredientSearch(ing.name);
                               }}
                               style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--panel-border)' }}
@@ -589,7 +633,12 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
                               <div style={{ fontWeight: 600 }}>{ing.name}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{getCategoryName(ing.categoryId)} - {ing.purchaseQuantity}{ing.purchaseUnit}あたり¥{ing.purchasePriceExTax}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                {newIngredientType === 'ingredient'
+                                  ? `${getCategoryName((ing as Ingredient).categoryId)} - ${(ing as Ingredient).purchaseQuantity}${(ing as Ingredient).purchaseUnit}あたり¥${(ing as Ingredient).purchasePriceExTax}`
+                                  : `${getCategoryName((ing as Prep).categoryId)} - 完成: ${(ing as Prep).yieldQuantity}${(ing as Prep).yieldUnit} (1単位あたり¥${(ing as Prep).unitCost.toFixed(2)})`
+                                }
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -624,6 +673,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                     <thead>
                       <tr>
                         {canEdit && <th style={{ width: '40px' }}></th>}
+                        <th style={{ width: '60px', textAlign: 'center' }}>種類</th>
                         <th>品名</th>
                         <th style={{ width: '120px', textAlign: 'right' }}>使用量</th>
                         {canEdit && <th style={{ width: '120px', textAlign: 'right' }}>基準単価</th>}
@@ -634,15 +684,15 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                     <tbody>
                       {formPrep.items.length === 0 ? (
                         <tr>
-                          <td colSpan={canEdit ? 6 : 4} style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)' }}>
+                          <td colSpan={canEdit ? 7 : 5} style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)' }}>
                             材料が登録されていません。
                           </td>
                         </tr>
                       ) : (
                         formPrep.items.map((item, idx) => {
                           const cost = calculateItemCost(item);
-                          const unitCost = getIngredientUnitCost(item.ingredientId);
-                          const ingName = getIngredientName(item.ingredientId, item.customName);
+                          const unitCost = getIngredientUnitCost(item);
+                          const ingName = getIngredientName(item);
                           
                           return (
                             <tr 
@@ -673,6 +723,16 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                                   <GripVertical size={14} />
                                 </td>
                               )}
+                              <td>
+                                <span style={{
+                                  fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px',
+                                  background: item.type === 'prep' ? 'rgba(16,185,129,0.15)' : item.type === 'custom' ? 'rgba(255,255,255,0.1)' : 'rgba(59,130,246,0.15)',
+                                  color: item.type === 'prep' ? 'var(--color-good)' : item.type === 'custom' ? 'var(--text-secondary)' : 'var(--primary-hover)',
+                                  fontWeight: 600
+                                }}>
+                                  {item.type === 'prep' ? '仕込み' : item.type === 'custom' ? 'その他' : '食材'}
+                                </span>
+                              </td>
                               <td style={{ fontWeight: 600 }}>{ingName}</td>
                               <td style={{ textAlign: 'right' }}>
                                 {canEdit ? (

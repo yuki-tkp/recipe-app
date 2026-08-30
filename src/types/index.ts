@@ -31,6 +31,8 @@ export interface Ingredient {
 }
 
 export interface PrepItem {
+  type?: 'ingredient' | 'prep' | 'custom';
+  prepId?: string | null;
   ingredientId: string | null;
   customName?: string;
   quantity: number;
