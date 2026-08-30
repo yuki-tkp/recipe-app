@@ -243,24 +243,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onViewChange, setSelectedR
           <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             登録・変更レシピ一覧 (最新5件)
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {recentRecipes.map(r => (
-              <div 
-                key={r.id} 
-                onClick={() => handleRecipeClick(r.id)}
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px',
-                  border: '1px solid var(--panel-border)', cursor: 'pointer', transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'}
-              >
-                <span style={{ fontWeight: 600 }}>{r.name}</span>
-                <span className={`badge ${getCostRateClass(r.costRate)}`}>{r.costRate}%</span>
-              </div>
-            ))}
-          </div>
+          <textarea
+            className="input-control"
+            style={{ width: '100%', height: '200px', resize: 'vertical', lineHeight: '1.6' }}
+            defaultValue={recentRecipes.map(r => `${r.name} (${r.costRate}%)`).join('\n')}
+          />
         </div>
       </div>
     </div>
