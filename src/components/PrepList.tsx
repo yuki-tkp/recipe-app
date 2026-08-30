@@ -610,7 +610,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                         {['g', 'kg', 'ml', 'L', '個', '本', '枚', '袋', 'パック', '束', 'ケース'].map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
                     </div>
-                    <button type="button" className="btn btn-primary" onClick={handleAddIngredient} disabled={!selectedIngredient}>
+                    <button type="button" className="btn btn-primary" onClick={handleAddIngredient} disabled={!selectedIngredient && !newIngredientSearch.trim()}>
                       追加
                     </button>
                   </div>
