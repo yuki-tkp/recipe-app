@@ -54,6 +54,8 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
   const [newIngredientUnit, setNewIngredientUnit] = useState('g');
 
   const [draggedPrepId, setDraggedPrepId] = useState<string | null>(null);
+  const [draggedIngredientIndex, setDraggedIngredientIndex] = useState<number | null>(null);
+  const [draggedInstructionIndex, setDraggedInstructionIndex] = useState<number | null>(null);
 
   const canEdit = store.getUserRole() !== 'staff';
 
@@ -621,6 +623,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                   <table className="excel-table">
                     <thead>
                       <tr>
+                        {canEdit && <th style={{ width: '40px' }}></th>}
                         <th>品名</th>
                         <th style={{ width: '120px', textAlign: 'right' }}>使用量</th>
                         {canEdit && <th style={{ width: '120px', textAlign: 'right' }}>基準単価</th>}
@@ -631,7 +634,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                     <tbody>
                       {formPrep.items.length === 0 ? (
                         <tr>
-                          <td colSpan={canEdit ? 5 : 4} style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)' }}>
+                          <td colSpan={canEdit ? 6 : 4} style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)' }}>
                             材料が登録されていません。
                           </td>
                         </tr>
@@ -642,7 +645,34 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                           const ingName = getIngredientName(item.ingredientId, item.customName);
                           
                           return (
-                            <tr key={idx}>
+                            <tr 
+                              key={idx}
+                              draggable={canEdit}
+                              onDragStart={(e) => {
+                                setDraggedIngredientIndex(idx);
+                                e.dataTransfer.effectAllowed = 'move';
+                              }}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                if (draggedIngredientIndex === null || draggedIngredientIndex === idx) return;
+                                const newItems = [...formPrep.items];
+                                const [movedItem] = newItems.splice(draggedIngredientIndex, 1);
+                                newItems.splice(idx, 0, movedItem);
+                                setFormPrep({ ...formPrep, items: newItems });
+                                setDraggedIngredientIndex(null);
+                              }}
+                              onDragEnd={() => setDraggedIngredientIndex(null)}
+                              style={{ 
+                                opacity: draggedIngredientIndex === idx ? 0.5 : 1,
+                                background: draggedIngredientIndex === idx ? 'rgba(255,255,255,0.05)' : undefined
+                              }}
+                            >
+                              {canEdit && (
+                                <td style={{ textAlign: 'center', cursor: 'grab', color: 'var(--text-muted)' }}>
+                                  <GripVertical size={14} />
+                                </td>
+                              )}
                               <td style={{ fontWeight: 600 }}>{ingName}</td>
                               <td style={{ textAlign: 'right' }}>
                                 {canEdit ? (
@@ -720,12 +750,36 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                     <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>手順が登録されていません。</p>
                   ) : (
                     formPrep.instructions.map((step, idx) => (
-                      <div key={idx} style={{ 
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                        padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)',
-                        borderRadius: '8px'
-                      }}>
+                      <div 
+                        key={idx} 
+                        draggable={canEdit}
+                        onDragStart={(e) => {
+                          setDraggedInstructionIndex(idx);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedInstructionIndex === null || draggedInstructionIndex === idx) return;
+                          const newInstructions = [...formPrep.instructions];
+                          const [movedStep] = newInstructions.splice(draggedInstructionIndex, 1);
+                          newInstructions.splice(idx, 0, movedStep);
+                          setFormPrep({ ...formPrep, instructions: newInstructions });
+                          setDraggedInstructionIndex(null);
+                        }}
+                        onDragEnd={() => setDraggedInstructionIndex(null)}
+                        style={{ 
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                          padding: '10px 14px', background: draggedInstructionIndex === idx ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)',
+                          borderRadius: '8px', opacity: draggedInstructionIndex === idx ? 0.5 : 1
+                        }}
+                      >
                         <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                          {canEdit && (
+                            <div style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', marginTop: '10px' }}>
+                              <GripVertical size={14} />
+                            </div>
+                          )}
                           <span style={{ fontWeight: 700, color: 'var(--primary-hover)', marginTop: canEdit ? '10px' : '0' }}>{idx + 1}.</span>
                           {canEdit ? (
                             <textarea

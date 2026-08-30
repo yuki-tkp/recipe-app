@@ -67,6 +67,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
 
   const [draggedRecipeId, setDraggedRecipeId] = useState<string | null>(null);
   const [draggedMaterialIndex, setDraggedMaterialIndex] = useState<number | null>(null);
+  const [draggedInstructionIndex, setDraggedInstructionIndex] = useState<number | null>(null);
 
   const canEdit = store.getUserRole() !== 'staff';
 
@@ -895,12 +896,36 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                     <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>手順が登録されていません。</p>
                   ) : (
                     formRecipe.instructions.map((step, idx) => (
-                      <div key={idx} style={{ 
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                        padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)',
-                        borderRadius: '8px'
-                      }}>
+                      <div 
+                        key={idx} 
+                        draggable={canEdit}
+                        onDragStart={(e) => {
+                          setDraggedInstructionIndex(idx);
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedInstructionIndex === null || draggedInstructionIndex === idx) return;
+                          const newInstructions = [...formRecipe.instructions];
+                          const [movedStep] = newInstructions.splice(draggedInstructionIndex, 1);
+                          newInstructions.splice(idx, 0, movedStep);
+                          setFormRecipe({ ...formRecipe, instructions: newInstructions });
+                          setDraggedInstructionIndex(null);
+                        }}
+                        onDragEnd={() => setDraggedInstructionIndex(null)}
+                        style={{ 
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                          padding: '10px 14px', background: draggedInstructionIndex === idx ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)',
+                          borderRadius: '8px', opacity: draggedInstructionIndex === idx ? 0.5 : 1
+                        }}
+                      >
                         <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                          {canEdit && (
+                            <div style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', marginTop: '10px' }}>
+                              <GripVertical size={14} />
+                            </div>
+                          )}
                           <span style={{ fontWeight: 700, color: 'var(--primary-hover)', marginTop: canEdit ? '10px' : '0' }}>{idx + 1}.</span>
                           {canEdit ? (
                             <textarea
