@@ -140,12 +140,15 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
     }
 
     if (viewMode === 'create') {
-      store.createRecipe(formRecipe);
+      const newId = store.createRecipe(formRecipe);
+      setFormRecipe(prev => ({ ...prev, id: newId }));
+      if (setSelectedRecipeId) setSelectedRecipeId(newId);
+      setViewMode('edit');
     } else {
       store.updateRecipe(formRecipe.id, formRecipe);
     }
     
-    setViewMode('list');
+    alert('保存しました');
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -180,27 +183,45 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
 
   // 材料追加
   const handleAddMaterial = () => {
-    if (!selectedMaterial) return;
+    if (!selectedMaterial && !newMaterialSearch.trim()) return;
 
-    const exists = formRecipe.items.some(item => item.id === selectedMaterial.id && item.type === newMaterialType);
-    if (exists) {
-      alert('すでに登録されている材料です。');
-      return;
+    if (selectedMaterial) {
+      const exists = formRecipe.items.some(item => item.id === selectedMaterial.id && item.type === newMaterialType);
+      if (exists) {
+        alert('すでに登録されている材料です。');
+        return;
+      }
+
+      const newItem: RecipeItem = {
+        type: newMaterialType,
+        id: selectedMaterial.id,
+        quantity: newMaterialQty,
+        unit: newMaterialUnit,
+        rawText: `${selectedMaterial.name}${newMaterialQty}${newMaterialUnit}`,
+        memo: '',
+      };
+
+      setFormRecipe({
+        ...formRecipe,
+        items: [...formRecipe.items, newItem]
+      });
+    } else {
+      const customName = newMaterialSearch.trim();
+      const newItem: RecipeItem = {
+        type: 'custom',
+        id: null,
+        customName: customName,
+        quantity: newMaterialQty,
+        unit: newMaterialUnit,
+        rawText: `${customName}${newMaterialQty}${newMaterialUnit}`,
+        memo: '',
+      };
+
+      setFormRecipe({
+        ...formRecipe,
+        items: [...formRecipe.items, newItem]
+      });
     }
-
-    const newItem: RecipeItem = {
-      type: newMaterialType,
-      id: selectedMaterial.id,
-      quantity: newMaterialQty,
-      unit: newMaterialUnit,
-      rawText: `${selectedMaterial.name}${newMaterialQty}${newMaterialUnit}`,
-      memo: '',
-    };
-
-    setFormRecipe({
-      ...formRecipe,
-      items: [...formRecipe.items, newItem]
-    });
 
     setNewMaterialSearch('');
     setSelectedMaterial(null);
@@ -218,6 +239,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
   };
 
   const getMaterialName = (item: RecipeItem) => {
+    if (item.type === 'custom') return item.customName || '不明な材料';
     if (!item.id) return '不明な材料';
     if (item.type === 'ingredient') {
       return ingredients.find(ing => ing.id === item.id)?.name || '不明な食材';
@@ -729,7 +751,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                         {['g', 'kg', 'ml', 'L', '個', '本', '枚', '袋', 'パック', '束', 'ケース'].map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
                     </div>
-                    <button type="button" className="btn btn-primary" onClick={handleAddMaterial} disabled={!selectedMaterial}>
+                    <button type="button" className="btn btn-primary" onClick={handleAddMaterial} disabled={!selectedMaterial && !newMaterialSearch.trim()}>
                       追加
                     </button>
                   </div>
@@ -793,11 +815,11 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                               <td>
                                 <span style={{
                                   fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px',
-                                  background: item.type === 'prep' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)',
-                                  color: item.type === 'prep' ? 'var(--color-good)' : 'var(--primary-hover)',
+                                  background: item.type === 'prep' ? 'rgba(16,185,129,0.15)' : item.type === 'custom' ? 'rgba(255,255,255,0.1)' : 'rgba(59,130,246,0.15)',
+                                  color: item.type === 'prep' ? 'var(--color-good)' : item.type === 'custom' ? 'var(--text-secondary)' : 'var(--primary-hover)',
                                   fontWeight: 600
                                 }}>
-                                  {item.type === 'prep' ? '仕込み' : '食材'}
+                                  {item.type === 'prep' ? '仕込み' : item.type === 'custom' ? 'その他' : '食材'}
                                 </span>
                               </td>
                               <td style={{ fontWeight: 600 }}>{getMaterialName(item)}</td>

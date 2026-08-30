@@ -121,12 +121,15 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     }
 
     if (viewMode === 'create') {
-      store.createPrep(formPrep);
+      const newId = store.createPrep(formPrep);
+      setFormPrep(prev => ({ ...prev, id: newId }));
+      setSelectedPrepId(newId);
+      setViewMode('edit');
     } else {
       store.updatePrep(formPrep.id, formPrep);
     }
     
-    setViewMode('list');
+    alert('保存しました');
   };
 
   // 削除
@@ -163,27 +166,44 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
 
   // 食材追加
   const handleAddIngredient = () => {
-    if (!selectedIngredient) return;
+    if (!selectedIngredient && !newIngredientSearch.trim()) return;
     
-    // 重複チェック
-    const exists = formPrep.items.some(item => item.ingredientId === selectedIngredient.id);
-    if (exists) {
-      alert('すでに登録されている食材です。');
-      return;
+    if (selectedIngredient) {
+      // 重複チェック
+      const exists = formPrep.items.some(item => item.ingredientId === selectedIngredient.id);
+      if (exists) {
+        alert('すでに登録されている食材です。');
+        return;
+      }
+
+      const newItem: PrepItem = {
+        ingredientId: selectedIngredient.id,
+        quantity: newIngredientQty,
+        unit: newIngredientUnit,
+        rawText: `${selectedIngredient.name}${newIngredientQty}${newIngredientUnit}`,
+        memo: '',
+      };
+
+      setFormPrep({
+        ...formPrep,
+        items: [...formPrep.items, newItem]
+      });
+    } else {
+      const customName = newIngredientSearch.trim();
+      const newItem: PrepItem = {
+        ingredientId: null,
+        customName: customName,
+        quantity: newIngredientQty,
+        unit: newIngredientUnit,
+        rawText: `${customName}${newIngredientQty}${newIngredientUnit}`,
+        memo: '',
+      };
+
+      setFormPrep({
+        ...formPrep,
+        items: [...formPrep.items, newItem]
+      });
     }
-
-    const newItem: PrepItem = {
-      ingredientId: selectedIngredient.id,
-      quantity: newIngredientQty,
-      unit: newIngredientUnit,
-      rawText: `${selectedIngredient.name}${newIngredientQty}${newIngredientUnit}`,
-      memo: '',
-    };
-
-    setFormPrep({
-      ...formPrep,
-      items: [...formPrep.items, newItem]
-    });
 
     setNewIngredientSearch('');
     setSelectedIngredient(null);
@@ -201,8 +221,8 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     return categories.find(c => c.id === id)?.name || '未分類';
   };
 
-  const getIngredientName = (id: string | null) => {
-    if (!id) return '不明な食材';
+  const getIngredientName = (id: string | null, customName?: string) => {
+    if (!id) return customName || '不明な食材';
     return ingredients.find(ing => ing.id === id)?.name || '不明な食材';
   };
 
@@ -619,7 +639,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                         formPrep.items.map((item, idx) => {
                           const cost = calculateItemCost(item);
                           const unitCost = getIngredientUnitCost(item.ingredientId);
-                          const ingName = getIngredientName(item.ingredientId);
+                          const ingName = getIngredientName(item.ingredientId, item.customName);
                           
                           return (
                             <tr key={idx}>

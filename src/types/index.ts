@@ -32,6 +32,7 @@ export interface Ingredient {
 
 export interface PrepItem {
   ingredientId: string | null;
+  customName?: string;
   quantity: number;
   unit: string;
   rawText: string;
@@ -56,8 +57,9 @@ export interface Prep {
 }
 
 export interface RecipeItem {
-  type: 'ingredient' | 'prep';
+  type: 'ingredient' | 'prep' | 'custom';
   id: string | null; // マッチした Ingredient ID または Prep ID
+  customName?: string;
   quantity: number;
   unit: string;
   rawText: string;
