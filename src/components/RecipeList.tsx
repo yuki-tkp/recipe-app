@@ -62,7 +62,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
   const [newMaterialSearch, setNewMaterialSearch] = useState('');
   const [newMaterialType, setNewMaterialType] = useState<'ingredient' | 'prep'>('ingredient');
   const [selectedMaterial, setSelectedMaterial] = useState<{ id: string; name: string; unit: string } | null>(null);
-  const [newMaterialQty, setNewMaterialQty] = useState(1);
+  const [newMaterialQty, setNewMaterialQty] = useState<number | string>('');
   const [newMaterialUnit, setNewMaterialUnit] = useState('g');
 
   const [draggedRecipeId, setDraggedRecipeId] = useState<string | null>(null);
@@ -196,7 +196,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
       const newItem: RecipeItem = {
         type: newMaterialType,
         id: selectedMaterial.id,
-        quantity: newMaterialQty,
+        quantity: newMaterialQty === '' ? 0 : Number(newMaterialQty),
         unit: newMaterialUnit,
         rawText: `${selectedMaterial.name}${newMaterialQty}${newMaterialUnit}`,
         memo: '',
@@ -212,7 +212,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
         type: 'custom',
         id: null,
         customName: customName,
-        quantity: newMaterialQty,
+        quantity: newMaterialQty === '' ? 0 : Number(newMaterialQty),
         unit: newMaterialUnit,
         rawText: `${customName}${newMaterialQty}${newMaterialUnit}`,
         memo: '',
@@ -226,7 +226,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
 
     setNewMaterialSearch('');
     setSelectedMaterial(null);
-    setNewMaterialQty(1);
+    setNewMaterialQty('');
   };
 
   const handleRemoveMaterial = (idx: number) => {
@@ -605,9 +605,10 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                       <input 
                         type="number" 
                         className="input-control" 
-                        readOnly={!canEdit}
-                        value={formRecipe.sellingPriceInTax} 
-                        onChange={e => setFormRecipe({ ...formRecipe, sellingPriceInTax: Number(e.target.value) })} 
+                        style={{ fontSize: '1.25rem', fontWeight: 'bold' }}
+                        value={formRecipe.sellingPriceInTax}
+                        onFocus={e => e.target.select()}
+                        onChange={e => setFormRecipe({ ...formRecipe, sellingPriceInTax: e.target.value === '' ? 0 : Number(e.target.value) })}
                       />
                     </div>
                   </div>
@@ -741,7 +742,8 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                         className="input-control" 
                         placeholder="分量" 
                         value={newMaterialQty}
-                        onChange={e => setNewMaterialQty(Number(e.target.value))}
+                        onFocus={e => e.target.select()}
+                        onChange={e => setNewMaterialQty(e.target.value === '' ? '' : Number(e.target.value))}
                       />
                       <select 
                         className="input-control"
@@ -832,9 +834,10 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                                       step="any"
                                       className="table-input"
                                       value={item.quantity}
+                                      onFocus={e => e.target.select()}
                                       onChange={e => {
                                         const updated = [...formRecipe.items];
-                                        updated[idx].quantity = Number(e.target.value);
+                                        updated[idx].quantity = e.target.value === '' ? 0 : Number(e.target.value);
                                         setFormRecipe({ ...formRecipe, items: updated });
                                       }}
                                       style={{ width: '80px', textAlign: 'right' }}

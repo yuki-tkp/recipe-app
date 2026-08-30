@@ -51,7 +51,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
   const [newIngredientSearch, setNewIngredientSearch] = useState('');
   const [newIngredientType, setNewIngredientType] = useState<'ingredient' | 'prep'>('ingredient');
   const [selectedIngredient, setSelectedIngredient] = useState<{ id: string; name: string; unit: string } | null>(null);
-  const [newIngredientQty, setNewIngredientQty] = useState(1);
+  const [newIngredientQty, setNewIngredientQty] = useState<number | string>('');
   const [newIngredientUnit, setNewIngredientUnit] = useState('g');
 
   const [draggedPrepId, setDraggedPrepId] = useState<string | null>(null);
@@ -188,7 +188,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
         type: newIngredientType,
         ingredientId: newIngredientType === 'ingredient' ? selectedIngredient.id : null,
         prepId: newIngredientType === 'prep' ? selectedIngredient.id : null,
-        quantity: newIngredientQty,
+        quantity: newIngredientQty === '' ? 0 : Number(newIngredientQty),
         unit: newIngredientUnit,
         rawText: `${selectedIngredient.name}${newIngredientQty}${newIngredientUnit}`,
         memo: '',
@@ -205,7 +205,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
         ingredientId: null,
         prepId: null,
         customName: customName,
-        quantity: newIngredientQty,
+        quantity: newIngredientQty === '' ? 0 : Number(newIngredientQty),
         unit: newIngredientUnit,
         rawText: `${customName}${newIngredientQty}${newIngredientUnit}`,
         memo: '',
@@ -219,7 +219,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
 
     setNewIngredientSearch('');
     setSelectedIngredient(null);
-    setNewIngredientQty(1);
+    setNewIngredientQty('');
   };
 
   // 材料削除
@@ -487,8 +487,10 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                       className="input-control" 
                       min="1"
                       readOnly={!canEdit}
+                      style={{ fontSize: '1.25rem', fontWeight: 'bold' }}
                       value={formPrep.yieldQuantity} 
-                      onChange={e => setFormPrep({ ...formPrep, yieldQuantity: Number(e.target.value) })} 
+                      onFocus={e => e.target.select()}
+                      onChange={e => setFormPrep({ ...formPrep, yieldQuantity: e.target.value === '' ? 0 : Number(e.target.value) })} 
                     />
                   </div>
                   <div>
@@ -650,7 +652,8 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                         className="input-control" 
                         placeholder="分量" 
                         value={newIngredientQty}
-                        onChange={e => setNewIngredientQty(Number(e.target.value))}
+                        onFocus={e => e.target.select()}
+                        onChange={e => setNewIngredientQty(e.target.value === '' ? '' : Number(e.target.value))}
                       />
                       <select 
                         className="input-control"
@@ -742,9 +745,10 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                                       step="any"
                                       className="table-input"
                                       value={item.quantity}
+                                      onFocus={e => e.target.select()}
                                       onChange={e => {
                                         const updated = [...formPrep.items];
-                                        updated[idx].quantity = Number(e.target.value);
+                                        updated[idx].quantity = e.target.value === '' ? 0 : Number(e.target.value);
                                         setFormPrep({ ...formPrep, items: updated });
                                       }}
                                       style={{ width: '80px', textAlign: 'right' }}

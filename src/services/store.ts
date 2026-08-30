@@ -129,11 +129,11 @@ class DataStore {
     
     try {
       const [{ data: cats }, { data: supps }, { data: ings }, { data: preps }, { data: recs }, { data: hists }] = await Promise.all([
-        supabase.from('categories').select('*'),
-        supabase.from('suppliers').select('*'),
-        supabase.from('ingredients').select('*'),
-        supabase.from('preps').select('*'),
-        supabase.from('recipes').select('*'),
+        supabase.from('categories').select('*').order('id'),
+        supabase.from('suppliers').select('*').order('id'),
+        supabase.from('ingredients').select('*').order('id'),
+        supabase.from('preps').select('*').order('id'),
+        supabase.from('recipes').select('*').order('id'),
         supabase.from('price_histories').select('*').order('changedAt', { ascending: false }).limit(100),
       ]);
 
