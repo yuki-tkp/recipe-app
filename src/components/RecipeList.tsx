@@ -366,37 +366,41 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                     </div>
 
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '4px' }}>{recipe.name}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>食器: {recipe.dishware || '-'}</p>
+                    {canEdit && (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>食器: {recipe.dishware || '-'}</p>
+                    )}
                   </div>
 
                   {/* 簡易財務表示 */}
-                  <div style={{
-                    marginTop: '20px',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    borderTop: '1px solid var(--panel-border)',
-                    paddingTop: '12px',
-                    gap: '10px'
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>売価(税込)</div>
-                      <div style={{ fontSize: '1rem', fontWeight: 700 }}>¥{Math.round(recipe.sellingPriceInTax).toLocaleString()}</div>
+                  {canEdit && (
+                    <div style={{
+                      marginTop: '20px',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      borderTop: '1px solid var(--panel-border)',
+                      paddingTop: '12px',
+                      gap: '10px'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>売価(税込)</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700 }}>¥{Math.round(recipe.sellingPriceInTax).toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>原価</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700 }}>¥{Math.round(recipe.costPrice).toLocaleString()}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>原価率</div>
+                        <span className={`badge ${getCostRateClass(recipe.costRate)}`} style={{ padding: '2px 6px', marginTop: '2px', fontSize: '0.8rem' }}>
+                          {recipe.costRate.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>粗利</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-good)' }}>¥{Math.round(recipe.sellingPriceExTax - recipe.costPrice).toLocaleString()}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>原価</div>
-                      <div style={{ fontSize: '1rem', fontWeight: 700 }}>¥{Math.round(recipe.costPrice).toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>原価率</div>
-                      <span className={`badge ${getCostRateClass(recipe.costRate)}`} style={{ padding: '2px 6px', marginTop: '2px', fontSize: '0.8rem' }}>
-                        {recipe.costRate.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>粗利</div>
-                      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-good)' }}>¥{Math.round(recipe.sellingPriceExTax - recipe.costPrice).toLocaleString()}</div>
-                    </div>
-                  </div>
+                  )}
 
                   <div style={{ position: 'absolute', right: '12px', top: '35%', opacity: 0.1 }}>
                     <ChevronRight size={36} />
@@ -525,7 +529,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
             {/* 左側：基本情報 */}
-            <div className="glass-panel" style={{ margin: 0 }}>
+            <div className="glass-panel" style={{ margin: 0, order: canEdit ? 1 : 2 }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={18} />
                 提供レシピ基本情報
@@ -610,34 +614,36 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
               </div>
 
               {/* 財務サマリーパネル */}
-              <div style={{ 
-                marginTop: '24px', padding: '16px', background: 'rgba(59,130,246,0.05)',
-                border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px',
-                display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px'
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>総原価 (計算値)</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginTop: '4px' }}>
-                    ¥{Math.round(tempCostPrice).toLocaleString()}
+              {canEdit && (
+                <div style={{ 
+                  marginTop: '24px', padding: '16px', background: 'rgba(59,130,246,0.05)',
+                  border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px',
+                  display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>総原価 (計算値)</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginTop: '4px' }}>
+                      ¥{Math.round(tempCostPrice).toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>原価率</div>
+                    <span className={`badge ${getCostRateClass(tempCostRate)}`} style={{ marginTop: '4px' }}>
+                      {tempCostRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>粗利額</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-good)', marginTop: '4px' }}>
+                      ¥{Math.round(tempGross).toLocaleString()}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>原価率</div>
-                  <span className={`badge ${getCostRateClass(tempCostRate)}`} style={{ marginTop: '4px' }}>
-                    {tempCostRate.toFixed(1)}%
-                  </span>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>粗利額</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-good)', marginTop: '4px' }}>
-                    ¥{Math.round(tempGross).toLocaleString()}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* 右側：使用材料 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', order: canEdit ? 2 : 1 }}>
               <div className="glass-panel" style={{ margin: 0 }}>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Database size={18} />
@@ -738,8 +744,8 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                         <th>タイプ</th>
                         <th>品名</th>
                         <th style={{ width: '100px', textAlign: 'right' }}>使用量</th>
-                        <th style={{ width: '100px', textAlign: 'right' }}>単価</th>
-                        <th style={{ width: '100px', textAlign: 'right' }}>小計</th>
+                        {canEdit && <th style={{ width: '100px', textAlign: 'right' }}>単価</th>}
+                        {canEdit && <th style={{ width: '100px', textAlign: 'right' }}>小計</th>}
                         {canEdit && <th style={{ width: '50px' }}></th>}
                       </tr>
                     </thead>
@@ -800,6 +806,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                                     <input 
                                       type="number" 
+                                      step="any"
                                       className="table-input"
                                       value={item.quantity}
                                       onChange={e => {
@@ -807,9 +814,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                                         updated[idx].quantity = Number(e.target.value);
                                         setFormRecipe({ ...formRecipe, items: updated });
                                       }}
-                                      style={{ width: '60px', textAlign: 'right' }}
+                                      style={{ width: '80px', textAlign: 'right' }}
                                     />
-                                    <span>{item.unit}</span>
+                                    <span style={{ fontSize: '0.9em' }}>{item.unit}</span>
                                   </div>
                                 ) : (
                                   `${item.quantity}${item.unit}`

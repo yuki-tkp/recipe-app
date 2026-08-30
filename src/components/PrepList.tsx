@@ -333,24 +333,28 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
 
                     <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>{prep.name}</h3>
                     
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      完成量: {prep.yieldQuantity} {prep.yieldUnit}
-                    </div>
+                    {canEdit && (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                        完成量: {prep.yieldQuantity} {prep.yieldUnit}
+                      </div>
+                    )}
                   </div>
 
-                  <div style={{ 
-                    borderTop: '1px solid var(--panel-border)', paddingTop: '12px', marginTop: '12px',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center' 
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>総原価</div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>¥{Math.round(prep.totalCost).toLocaleString()}</div>
+                  {canEdit && (
+                    <div style={{ 
+                      borderTop: '1px solid var(--panel-border)', paddingTop: '12px', marginTop: '12px',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center' 
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>総原価</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>¥{Math.round(prep.totalCost).toLocaleString()}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>1{prep.yieldUnit}あたり原価</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-good)' }}>¥{prep.unitCost.toFixed(2)}</div>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>1{prep.yieldUnit}あたり原価</div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-good)' }}>¥{prep.unitCost.toFixed(2)}</div>
-                    </div>
-                  </div>
+                  )}
                   
                   <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.1 }}>
                     <ChevronRight size={40} />
@@ -383,7 +387,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
             {/* 左側：基本情報 */}
-            <div className="glass-panel" style={{ margin: 0 }}>
+            <div className="glass-panel" style={{ margin: 0, order: canEdit ? 1 : 2 }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ChefHat size={18} />
                 仕込み基本情報
@@ -499,28 +503,30 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
               </div>
 
               {/* 原価サマリーパネル */}
-              <div style={{ 
-                marginTop: '24px', padding: '16px', background: 'rgba(59,130,246,0.05)',
-                border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px',
-                display: 'flex', justifyContent: 'space-between'
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>仕込み総原価 (計算値)</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginTop: '4px' }}>
-                    ¥{Math.round(currentTempTotalCost).toLocaleString()}
+              {canEdit && (
+                <div style={{ 
+                  marginTop: '24px', padding: '16px', background: 'rgba(59,130,246,0.05)',
+                  border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px',
+                  display: 'flex', justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>仕込み総原価 (計算値)</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginTop: '4px' }}>
+                      ¥{Math.round(currentTempTotalCost).toLocaleString()}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>1{formPrep.yieldUnit}あたり原価</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-good)', marginTop: '4px' }}>
+                      ¥{currentTempUnitCost.toFixed(2)}
+                    </div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>1{formPrep.yieldUnit}あたり原価</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-good)', marginTop: '4px' }}>
-                    ¥{currentTempUnitCost.toFixed(2)}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* 右側：使用材料・作成手順 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', order: canEdit ? 2 : 1 }}>
               {/* 使用材料 */}
               <div className="glass-panel" style={{ margin: 0 }}>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -596,9 +602,9 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                     <thead>
                       <tr>
                         <th>品名</th>
-                        <th style={{ width: '100px', textAlign: 'right' }}>使用量</th>
-                        <th style={{ width: '120px', textAlign: 'right' }}>基準単価</th>
-                        <th style={{ width: '120px', textAlign: 'right' }}>小計原価</th>
+                        <th style={{ width: '120px', textAlign: 'right' }}>使用量</th>
+                        {canEdit && <th style={{ width: '120px', textAlign: 'right' }}>基準単価</th>}
+                        {canEdit && <th style={{ width: '120px', textAlign: 'right' }}>小計原価</th>}
                         {canEdit && <th style={{ width: '50px' }}></th>}
                       </tr>
                     </thead>
@@ -623,6 +629,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                                     <input 
                                       type="number" 
+                                      step="any"
                                       className="table-input"
                                       value={item.quantity}
                                       onChange={e => {
@@ -630,7 +637,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                                         updated[idx].quantity = Number(e.target.value);
                                         setFormPrep({ ...formPrep, items: updated });
                                       }}
-                                      style={{ width: '60px', textAlign: 'right' }}
+                                      style={{ width: '80px', textAlign: 'right' }}
                                     />
                                     <span style={{ fontSize: '0.9em' }}>{item.unit}</span>
                                   </div>
@@ -638,12 +645,16 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                                   `${item.quantity}${item.unit}`
                                 )}
                               </td>
-                              <td style={{ textAlign: 'right', fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                                ¥{unitCost.toFixed(3)}
-                              </td>
-                              <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                                ¥{Math.round(cost).toLocaleString()}
-                              </td>
+                              {canEdit && (
+                                <td style={{ textAlign: 'right', fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                  ¥{unitCost.toFixed(3)}
+                                </td>
+                              )}
+                              {canEdit && (
+                                <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                                  ¥{Math.round(cost).toLocaleString()}
+                                </td>
+                              )}
                               {canEdit && (
                                 <td style={{ textAlign: 'center' }}>
                                   <button type="button" onClick={() => handleRemoveIngredient(idx)} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer' }}>
