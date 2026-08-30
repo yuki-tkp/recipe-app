@@ -137,11 +137,25 @@ class DataStore {
         supabase.from('price_histories').select('*').order('changedAt', { ascending: false }).limit(100),
       ]);
 
-      if (cats) this.categories = cats;
-      if (supps) this.suppliers = supps;
-      if (ings) this.ingredients = ings;
-      if (preps) this.preps = preps;
-      if (recs) this.recipes = recs;
+      // Helper to merge while preserving local order
+      const mergeWithLocalOrder = <T extends { id: string }>(localArr: T[], fetchedArr: T[]) => {
+        if (!localArr.length) return fetchedArr; // 初回ロード時などはそのまま
+        const existingOrder = localArr.map(item => item.id);
+        return fetchedArr.sort((a, b) => {
+          const idxA = existingOrder.indexOf(a.id);
+          const idxB = existingOrder.indexOf(b.id);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1; // 既存のものは上に
+          if (idxB !== -1) return 1;
+          return 0;
+        });
+      };
+
+      if (cats) this.categories = mergeWithLocalOrder(this.categories, cats);
+      if (supps) this.suppliers = mergeWithLocalOrder(this.suppliers, supps);
+      if (ings) this.ingredients = mergeWithLocalOrder(this.ingredients, ings);
+      if (preps) this.preps = mergeWithLocalOrder(this.preps, preps);
+      if (recs) this.recipes = mergeWithLocalOrder(this.recipes, recs);
       if (hists) this.priceHistories = hists;
 
       this.recalculateAll();
