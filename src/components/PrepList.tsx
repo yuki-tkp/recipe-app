@@ -124,7 +124,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
       const newId = store.createPrep(formPrep);
       setFormPrep(prev => ({ ...prev, id: newId }));
       setSelectedPrepId(newId);
-      setViewMode('edit');
+      setViewMode('detail');
     } else {
       store.updatePrep(formPrep.id, formPrep);
     }

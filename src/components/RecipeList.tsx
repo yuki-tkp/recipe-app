@@ -143,7 +143,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
       const newId = store.createRecipe(formRecipe);
       setFormRecipe(prev => ({ ...prev, id: newId }));
       if (setSelectedRecipeId) setSelectedRecipeId(newId);
-      setViewMode('edit');
+      setViewMode('detail');
     } else {
       store.updateRecipe(formRecipe.id, formRecipe);
     }
