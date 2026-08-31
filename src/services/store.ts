@@ -216,19 +216,48 @@ class DataStore {
     });
 
     const prepMap = new Map<string, Prep>();
+    this.preps.forEach(p => prepMap.set(p.id, p));
 
-    this.preps.forEach(prep => {
+    // 仕込みの原価を再帰的に計算する関数（無限ループ防止付き）
+    const calculating = new Set<string>();
+    const calculated = new Set<string>();
+
+    const calcPrepCost = (prepId: string): number => {
+      if (calculated.has(prepId)) return prepMap.get(prepId)!.totalCost;
+      if (calculating.has(prepId)) return 0; // 循環参照の検知
+
+      const prep = prepMap.get(prepId);
+      if (!prep) return 0;
+
+      calculating.add(prepId);
       let totalCost = 0;
+
       prep.items.forEach(item => {
-        if (item.ingredientId && ingredientMap.has(item.ingredientId)) {
+        const type = item.type || 'ingredient';
+        if (type === 'ingredient' && item.ingredientId && ingredientMap.has(item.ingredientId)) {
           const ing = ingredientMap.get(item.ingredientId)!;
           const { baseQty } = convertQuantityToStockUnit(item.quantity, item.unit);
           totalCost += baseQty * ing.unitCost;
+        } else if (type === 'prep' && item.prepId && prepMap.has(item.prepId)) {
+          const childPrep = prepMap.get(item.prepId)!;
+          // 再帰的に子仕込みの原価を計算
+          calcPrepCost(childPrep.id);
+          const { baseQty } = convertQuantityToStockUnit(item.quantity, item.unit);
+          totalCost += baseQty * childPrep.unitCost;
         }
       });
+
       prep.totalCost = Number(totalCost.toFixed(2));
       prep.unitCost = prep.yieldQuantity > 0 ? Number((prep.totalCost / prep.yieldQuantity).toFixed(4)) : 0;
-      prepMap.set(prep.id, prep);
+      
+      calculating.delete(prepId);
+      calculated.add(prepId);
+      
+      return prep.totalCost;
+    };
+
+    this.preps.forEach(prep => {
+      calcPrepCost(prep.id);
     });
 
     this.recipes.forEach(rec => {
