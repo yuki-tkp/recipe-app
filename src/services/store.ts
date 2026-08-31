@@ -158,6 +158,27 @@ class DataStore {
       if (recs) this.recipes = mergeWithLocalOrder(this.recipes, recs);
       if (hists) this.priceHistories = hists;
 
+      // --------------------------------------------------------
+      // 一時的な処理: クラウドから最新データを取得した直後にカテゴリーごとに並べ替えを実行する
+      // （前回ローカルデータのみでソートしたため、漏れていた新規データを拾うためのv2）
+      if (!localStorage.getItem('has_sorted_by_category_v2')) {
+        const sortByCat = (a: any, b: any) => {
+          const catA = a.categoryId || '';
+          const catB = b.categoryId || '';
+          if (catA === catB) {
+            return (a.name || '').localeCompare(b.name || '', 'ja');
+          }
+          return catA.localeCompare(catB, 'ja');
+        };
+        
+        if (this.ingredients.length > 0) this.ingredients.sort(sortByCat);
+        if (this.preps.length > 0) this.preps.sort(sortByCat);
+        if (this.recipes.length > 0) this.recipes.sort(sortByCat);
+        
+        localStorage.setItem('has_sorted_by_category_v2', 'true');
+      }
+      // --------------------------------------------------------
+
       this.recalculateAll();
       this.notifyListeners();
     } catch (e) {
@@ -241,6 +262,17 @@ class DataStore {
 
   private notifyListeners() {
     this.listeners.forEach(l => l());
+    
+    // 現在の並び順と状態をローカルストレージに保存し、リロード後も順序を維持する
+    try {
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(this.categories));
+      localStorage.setItem(STORAGE_KEYS.SUPPLIERS, JSON.stringify(this.suppliers));
+      localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(this.ingredients));
+      localStorage.setItem(STORAGE_KEYS.PREPS, JSON.stringify(this.preps));
+      localStorage.setItem(STORAGE_KEYS.RECIPES, JSON.stringify(this.recipes));
+    } catch (e) {
+      console.warn('Failed to save state to localStorage', e);
+    }
   }
 
   // --- Getters ---
