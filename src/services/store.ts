@@ -137,9 +137,18 @@ class DataStore {
         supabase.from('price_histories').select('*').order('changedAt', { ascending: false }).limit(100),
       ]);
 
+      const sortByCat = (a: any, b: any) => {
+        const catA = a.categoryId || '';
+        const catB = b.categoryId || '';
+        if (catA === catB) {
+          return (a.name || '').localeCompare(b.name || '', 'ja');
+        }
+        return catA.localeCompare(catB, 'ja');
+      };
+
       // Helper to merge while preserving local order
-      const mergeWithLocalOrder = <T extends { id: string }>(localArr: T[], fetchedArr: T[]) => {
-        if (!localArr.length) return fetchedArr; // 初回ロード時などはそのまま
+      const mergeWithLocalOrder = <T extends { id: string }>(localArr: T[], fetchedArr: T[], defaultSort?: (a: T, b: T) => number) => {
+        if (!localArr.length) return defaultSort ? fetchedArr.sort(defaultSort) : fetchedArr; // 初回ロード時などはデフォルトソートを適用
         const existingOrder = localArr.map(item => item.id);
         return fetchedArr.sort((a, b) => {
           const idxA = existingOrder.indexOf(a.id);
@@ -147,35 +156,26 @@ class DataStore {
           if (idxA !== -1 && idxB !== -1) return idxA - idxB;
           if (idxA !== -1) return -1; // 既存のものは上に
           if (idxB !== -1) return 1;
+          if (defaultSort) return defaultSort(a, b); // 両方新規の場合はデフォルト順
           return 0;
         });
       };
 
       if (cats) this.categories = mergeWithLocalOrder(this.categories, cats);
       if (supps) this.suppliers = mergeWithLocalOrder(this.suppliers, supps);
-      if (ings) this.ingredients = mergeWithLocalOrder(this.ingredients, ings);
-      if (preps) this.preps = mergeWithLocalOrder(this.preps, preps);
-      if (recs) this.recipes = mergeWithLocalOrder(this.recipes, recs);
+      if (ings) this.ingredients = mergeWithLocalOrder(this.ingredients, ings, sortByCat);
+      if (preps) this.preps = mergeWithLocalOrder(this.preps, preps, sortByCat);
+      if (recs) this.recipes = mergeWithLocalOrder(this.recipes, recs, sortByCat);
       if (hists) this.priceHistories = hists;
 
       // --------------------------------------------------------
-      // 一時的な処理: クラウドから最新データを取得した直後にカテゴリーごとに並べ替えを実行する
-      // （前回ローカルデータのみでソートしたため、漏れていた新規データを拾うためのv2）
-      if (!localStorage.getItem('has_sorted_by_category_v2')) {
-        const sortByCat = (a: any, b: any) => {
-          const catA = a.categoryId || '';
-          const catB = b.categoryId || '';
-          if (catA === catB) {
-            return (a.name || '').localeCompare(b.name || '', 'ja');
-          }
-          return catA.localeCompare(catB, 'ja');
-        };
-        
+      // 一時的な処理: ログアウト等でローカルの並び順がリセットされバラバラになった状態を復旧するためのv3
+      if (!localStorage.getItem('has_sorted_by_category_v3')) {
         if (this.ingredients.length > 0) this.ingredients.sort(sortByCat);
         if (this.preps.length > 0) this.preps.sort(sortByCat);
         if (this.recipes.length > 0) this.recipes.sort(sortByCat);
         
-        localStorage.setItem('has_sorted_by_category_v2', 'true');
+        localStorage.setItem('has_sorted_by_category_v3', 'true');
       }
       // --------------------------------------------------------
 
