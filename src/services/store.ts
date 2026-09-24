@@ -147,16 +147,25 @@ class DataStore {
       };
 
       // Helper to merge while preserving local order
-      const mergeWithLocalOrder = <T extends { id: string }>(localArr: T[], fetchedArr: T[], defaultSort?: (a: T, b: T) => number) => {
-        if (!localArr.length) return defaultSort ? fetchedArr.sort(defaultSort) : fetchedArr; // 初回ロード時などはデフォルトソートを適用
-        const existingOrder = localArr.map(item => item.id);
+      const loadSavedOrder = (key: string) => {
+        try {
+          return JSON.parse(localStorage.getItem(key) || '[]');
+        } catch {
+          return [];
+        }
+      };
+
+      const mergeWithLocalOrder = <T extends { id: string }>(localArr: T[], fetchedArr: T[], defaultSort?: (a: T, b: T) => number, storageKey?: string) => {
+        const existingOrder = storageKey ? loadSavedOrder(storageKey) : localArr.map(item => item.id);
+        if (!existingOrder.length) return defaultSort ? fetchedArr.sort(defaultSort) : fetchedArr;
+        
         return fetchedArr.sort((a, b) => {
           const idxA = existingOrder.indexOf(a.id);
           const idxB = existingOrder.indexOf(b.id);
           if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-          if (idxA !== -1) return -1; // 既存のものは上に
+          if (idxA !== -1) return -1;
           if (idxB !== -1) return 1;
-          if (defaultSort) return defaultSort(a, b); // 両方新規の場合はデフォルト順
+          if (defaultSort) return defaultSort(a, b);
           return 0;
         });
       };
@@ -222,8 +231,8 @@ class DataStore {
       }
       if (supps) this.suppliers = mergeWithLocalOrder(this.suppliers, supps);
       if (ings) this.ingredients = mergeWithLocalOrder(this.ingredients, ings, sortByCat);
-      if (preps) this.preps = mergeWithLocalOrder(this.preps, preps, sortByCat);
-      if (recs) this.recipes = mergeWithLocalOrder(this.recipes, recs, sortByCat);
+      if (preps) this.preps = mergeWithLocalOrder(this.preps, preps, this.getAutoSortFunction('prep'), 'prep_manual_order');
+      if (recs) this.recipes = mergeWithLocalOrder(this.recipes, recs, this.getAutoSortFunction('recipe'), 'recipe_manual_order');
       if (hists) this.priceHistories = hists;
 
       // --------------------------------------------------------
@@ -455,6 +464,53 @@ class DataStore {
     }
   }
 
+  private getAutoSortFunction(type: 'prep' | 'recipe') {
+    const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
+    const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
+    const order = type === 'prep' ? prepOrder : recipeOrder;
+
+    return (a: any, b: any) => {
+      const getFirstCatName = (catId: string) => {
+        const id = (catId || '').split(',')[0];
+        return this.categories.find(c => c.id === id && c.type === type)?.name || '';
+      };
+      const catA = getFirstCatName(a.categoryId);
+      const catB = getFirstCatName(b.categoryId);
+      const indexA = order.indexOf(catA);
+      const indexB = order.indexOf(catB);
+      
+      const posA = indexA === -1 ? 999 : indexA;
+      const posB = indexB === -1 ? 999 : indexB;
+      
+      if (posA !== posB) return posA - posB;
+      
+      return (a.name || '').localeCompare(b.name || '', 'ja');
+    };
+  }
+
+  private insertItemAutoSorted<T extends { id: string }>(arr: T[], item: T, type: 'prep' | 'recipe'): T[] {
+    const sortFn = this.getAutoSortFunction(type);
+    const filtered = arr.filter(x => x.id !== item.id);
+    
+    let insertIndex = filtered.length;
+    for (let i = 0; i < filtered.length; i++) {
+      if (sortFn(item, filtered[i]) < 0) {
+        insertIndex = i;
+        break;
+      }
+    }
+    filtered.splice(insertIndex, 0, item);
+    return filtered;
+  }
+
+  private saveManualOrder(type: 'prep' | 'recipe') {
+    if (type === 'prep') {
+      localStorage.setItem('prep_manual_order', JSON.stringify(this.preps.map(p => p.id)));
+    } else {
+      localStorage.setItem('recipe_manual_order', JSON.stringify(this.recipes.map(r => r.id)));
+    }
+  }
+
   createPrep(prep: Omit<Prep, 'id' | 'totalCost' | 'unitCost'>) {
     const id = 'prep_' + Math.random().toString(36).substr(2, 9);
     const newPrep: Prep = {
@@ -463,7 +519,8 @@ class DataStore {
       totalCost: 0,
       unitCost: 0,
     };
-    this.preps.push(newPrep);
+    this.preps = this.insertItemAutoSorted(this.preps, newPrep, 'prep');
+    this.saveManualOrder('prep');
     this.recalculateAll();
     this.notifyListeners();
     
@@ -476,7 +533,9 @@ class DataStore {
   updatePrep(id: string, updated: Partial<Prep>) {
     const idx = this.preps.findIndex(p => p.id === id);
     if (idx !== -1) {
-      this.preps[idx] = { ...this.preps[idx], ...updated };
+      const updatedPrep = { ...this.preps[idx], ...updated };
+      this.preps = this.insertItemAutoSorted(this.preps, updatedPrep, 'prep');
+      this.saveManualOrder('prep');
       this.recalculateAll();
       this.notifyListeners();
       
@@ -505,16 +564,12 @@ class DataStore {
   }
 
   reorderPreps(sourceId: string, destId: string) {
-    // Array ordering is tricky in RDB without an order_index.
-    // For now, we update local state, but since we rely on Supabase returning order...
-    // Actually, relational DB returns random order unless sorted! 
-    // We need to fetch with order. Wait, our schema doesn't have order_index.
-    // This is a known limitation of the current migration. We will just swap locally for now.
     const sourceIndex = this.preps.findIndex(p => p.id === sourceId);
     const destIndex = this.preps.findIndex(p => p.id === destId);
     if (sourceIndex !== -1 && destIndex !== -1 && sourceIndex !== destIndex) {
       const [moved] = this.preps.splice(sourceIndex, 1);
       this.preps.splice(destIndex, 0, moved);
+      this.saveManualOrder('prep');
       this.notifyListeners();
     }
   }
@@ -529,7 +584,8 @@ class DataStore {
       costRate: 0,
       grossProfit: 0,
     };
-    this.recipes.push(newRecipe);
+    this.recipes = this.insertItemAutoSorted(this.recipes, newRecipe, 'recipe');
+    this.saveManualOrder('recipe');
     this.recalculateAll();
     this.notifyListeners();
     if (supabase) {
@@ -541,7 +597,9 @@ class DataStore {
   updateRecipe(id: string, updated: Partial<Recipe>) {
     const idx = this.recipes.findIndex(r => r.id === id);
     if (idx !== -1) {
-      this.recipes[idx] = { ...this.recipes[idx], ...updated };
+      const updatedRecipe = { ...this.recipes[idx], ...updated };
+      this.recipes = this.insertItemAutoSorted(this.recipes, updatedRecipe, 'recipe');
+      this.saveManualOrder('recipe');
       this.recalculateAll();
       this.notifyListeners();
       if (supabase) {
@@ -564,6 +622,7 @@ class DataStore {
     if (sourceIndex !== -1 && destIndex !== -1 && sourceIndex !== destIndex) {
       const [moved] = this.recipes.splice(sourceIndex, 1);
       this.recipes.splice(destIndex, 0, moved);
+      this.saveManualOrder('recipe');
       this.notifyListeners();
     }
   }
