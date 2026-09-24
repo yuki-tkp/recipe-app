@@ -327,7 +327,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
               <div className="filter-item filter-item-sm">
                 <select className="input-control" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
                   <option value="all">すべてのカテゴリ</option>
-                  {categories.filter(c => !c.type || c.type === 'recipe' || c.type === 'common').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {categories.filter(c => c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
             </div>
@@ -580,7 +580,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                       disabled={!canEdit}
                       onChange={e => setFormRecipe({ ...formRecipe, categoryId: e.target.value })}
                     >
-                      {categories.filter(c => !c.type || c.type === 'recipe' || c.type === 'common').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categories.filter(c => c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   <div>
