@@ -625,7 +625,9 @@ class DataStore {
 
     const prepUpdates = [];
     for (const p of this.preps) {
-      if (!this.categories.some(c => c.id === p.categoryId && c.type === 'prep') && prepUnset) {
+      const ids = (p.categoryId || '').split(',');
+      const hasValidCat = ids.some(id => this.categories.some(c => c.id === id && (c.type === 'prep' || c.type === 'recipe')));
+      if (!hasValidCat && prepUnset) {
         p.categoryId = prepUnset.id;
         prepUpdates.push(supabase.from('preps').update({ categoryId: prepUnset.id }).eq('id', p.id));
       }
@@ -633,7 +635,9 @@ class DataStore {
 
     const recipeUpdates = [];
     for (const r of this.recipes) {
-      if (!this.categories.some(c => c.id === r.categoryId && c.type === 'recipe') && recipeUnset) {
+      const ids = (r.categoryId || '').split(',');
+      const hasValidCat = ids.some(id => this.categories.some(c => c.id === id && (c.type === 'prep' || c.type === 'recipe')));
+      if (!hasValidCat && recipeUnset) {
         r.categoryId = recipeUnset.id;
         recipeUpdates.push(supabase.from('recipes').update({ categoryId: recipeUnset.id }).eq('id', r.id));
       }
