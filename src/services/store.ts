@@ -349,7 +349,33 @@ class DataStore {
     };
   }
 
+  private sortCategories() {
+    const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他'];
+    const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
+    
+    this.categories.sort((a, b) => {
+      const typeOrder: Record<string, number> = { prep: 1, recipe: 2, ingredient: 3, common: 4 };
+      const typeA = typeOrder[a.type || 'common'] || 5;
+      const typeB = typeOrder[b.type || 'common'] || 5;
+      if (typeA !== typeB) return typeA - typeB;
+
+      let order: string[] = [];
+      if (a.type === 'prep') order = prepOrder;
+      if (a.type === 'recipe') order = recipeOrder;
+      
+      const idxA = order.indexOf(a.name);
+      const idxB = order.indexOf(b.name);
+      
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      
+      return a.name.localeCompare(b.name, 'ja');
+    });
+  }
+
   private notifyListeners() {
+    this.sortCategories();
     this.listeners.forEach(l => l());
     
     // 現在の並び順と状態をローカルストレージに保存し、リロード後も順序を維持する
