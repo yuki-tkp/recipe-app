@@ -236,13 +236,34 @@ class DataStore {
       if (hists) this.priceHistories = hists;
 
       // --------------------------------------------------------
-      // 一時的な処理: ログアウト等でローカルの並び順がリセットされバラバラになった状態を復旧するためのv3
-      if (!localStorage.getItem('has_sorted_by_category_v3')) {
-        if (this.ingredients.length > 0) this.ingredients.sort(sortByCat);
-        if (this.preps.length > 0) this.preps.sort(sortByCat);
-        if (this.recipes.length > 0) this.recipes.sort(sortByCat);
+      // カテゴリ順序が壊れていた問題の復旧 (v4)
+      // 手動で並び替えた相対順序(50音順など)を維持しつつ、カテゴリごとに正しくグルーピングする安定ソートを実行
+      if (!localStorage.getItem('has_sorted_by_category_v4')) {
+        const stableSortByCategory = (arr: any[], type: 'prep' | 'recipe') => {
+          const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
+          const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
+          const order = type === 'prep' ? [...prepOrder, ...recipeOrder] : [...recipeOrder, ...prepOrder];
+          
+          arr.sort((a, b) => {
+            const getCatName = (catId: string) => this.categories.find(c => c.id === (catId || '').split(',')[0])?.name || '';
+            const idxA = order.indexOf(getCatName(a.categoryId));
+            const idxB = order.indexOf(getCatName(b.categoryId));
+            const posA = idxA === -1 ? 999 : idxA;
+            const posB = idxB === -1 ? 999 : idxB;
+            return posA - posB;
+          });
+        };
         
-        localStorage.setItem('has_sorted_by_category_v3', 'true');
+        if (this.preps.length > 0) {
+          stableSortByCategory(this.preps, 'prep');
+          this.saveManualOrder('prep');
+        }
+        if (this.recipes.length > 0) {
+          stableSortByCategory(this.recipes, 'recipe');
+          this.saveManualOrder('recipe');
+        }
+        
+        localStorage.setItem('has_sorted_by_category_v4', 'true');
       }
       // --------------------------------------------------------
 
@@ -467,12 +488,17 @@ class DataStore {
   private getAutoSortFunction(type: 'prep' | 'recipe') {
     const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
     const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
-    const order = type === 'prep' ? prepOrder : recipeOrder;
+    
+    // 両方のカテゴリ順序を結合して、どちらが来ても対応できるようにする
+    const order = type === 'prep' 
+      ? [...prepOrder, ...recipeOrder.filter(x => x !== '未設定')] 
+      : [...recipeOrder, ...prepOrder.filter(x => x !== '未設定')];
 
     return (a: any, b: any) => {
       const getFirstCatName = (catId: string) => {
         const id = (catId || '').split(',')[0];
-        return this.categories.find(c => c.id === id && c.type === type)?.name || '';
+        // typeで絞り込まずにIDで名前を取得する
+        return this.categories.find(c => c.id === id)?.name || '';
       };
       const catA = getFirstCatName(a.categoryId);
       const catB = getFirstCatName(b.categoryId);

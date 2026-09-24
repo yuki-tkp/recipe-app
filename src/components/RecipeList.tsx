@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Search, 
   Plus, 
@@ -305,12 +305,49 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
     return 'cost-rate-danger';
   };
 
-  // フィルタリング
-  const filteredRecipes = recipes.filter(r => {
-    const matchesSearch = r.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || (r.categoryId || '').split(',').includes(selectedCategory);
-    return matchesSearch && matchesCategory;
-  });
+  // フィルタリングされた一覧をカテゴリごとに展開してソート
+  const displayRecipes = useMemo(() => {
+    const list: (Recipe & { _displayCatId: string })[] = [];
+    
+    recipes.forEach(r => {
+      const cats = (r.categoryId || '').split(',').filter(Boolean);
+      
+      const matchesSearch = r.name.toLowerCase().includes(searchText.toLowerCase());
+      if (!matchesSearch) return;
+
+      if (cats.length === 0) {
+        if (selectedCategory === 'all' || selectedCategory === '') {
+          list.push({ ...r, _displayCatId: '' });
+        }
+      } else {
+        cats.forEach(c => {
+          if (selectedCategory === 'all' || selectedCategory === c) {
+            list.push({ ...r, _displayCatId: c });
+          }
+        });
+      }
+    });
+
+    const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
+    const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
+    const order = [...recipeOrder, ...prepOrder];
+    
+    list.sort((a, b) => {
+      const catNameA = categories.find(c => c.id === a._displayCatId)?.name || '';
+      const catNameB = categories.find(c => c.id === b._displayCatId)?.name || '';
+      const idxA = order.indexOf(catNameA);
+      const idxB = order.indexOf(catNameB);
+      const posA = idxA === -1 ? 999 : idxA;
+      const posB = idxB === -1 ? 999 : idxB;
+      
+      if (posA !== posB) return posA - posB;
+      
+      return recipes.findIndex(r => r.id === a.id) - recipes.findIndex(r => r.id === b.id);
+    });
+
+    return list;
+  }, [recipes, searchText, selectedCategory, categories]);
+
 
   return (
     <div className="animate-fade-in">
@@ -358,14 +395,14 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
             gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
             gap: '20px',
           }}>
-            {filteredRecipes.length === 0 ? (
+            {displayRecipes.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
                 提供レシピが登録されていません。
               </div>
             ) : (
-              filteredRecipes.map(recipe => (
+              displayRecipes.map(recipe => (
                 <div 
-                  key={recipe.id} 
+                  key={`${recipe.id}-${recipe._displayCatId}`} 
                   className="glass-panel"
                   onClick={() => handleOpenDetail(recipe)}
                   draggable={canEdit && searchText === '' && selectedCategory === 'all'}
@@ -398,7 +435,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
-                        {getCategoryName(recipe.categoryId)}
+                        {categories.find(c => c.id === recipe._displayCatId)?.name || '未設定'}
                       </span>
                       {recipe.status === 'private' && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>

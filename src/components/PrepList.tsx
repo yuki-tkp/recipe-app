@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Search, 
   Plus, 
@@ -298,12 +298,48 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
   const currentTempTotalCost = formPrep.items.reduce((sum, item) => sum + calculateItemCost(item), 0);
   const currentTempUnitCost = formPrep.yieldQuantity > 0 ? currentTempTotalCost / formPrep.yieldQuantity : 0;
 
-  // フィルタリングされた一覧
-  const filteredPreps = preps.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || (p.categoryId || '').split(',').includes(selectedCategory);
-    return matchesSearch && matchesCategory;
-  });
+  // フィルタリングされた一覧をカテゴリごとに展開してソート
+  const displayPreps = useMemo(() => {
+    const list: (Prep & { _displayCatId: string })[] = [];
+    
+    preps.forEach(p => {
+      const cats = (p.categoryId || '').split(',').filter(Boolean);
+      
+      const matchesSearch = p.name.toLowerCase().includes(searchText.toLowerCase());
+      if (!matchesSearch) return;
+
+      if (cats.length === 0) {
+        if (selectedCategory === 'all' || selectedCategory === '') {
+          list.push({ ...p, _displayCatId: '' });
+        }
+      } else {
+        cats.forEach(c => {
+          if (selectedCategory === 'all' || selectedCategory === c) {
+            list.push({ ...p, _displayCatId: c });
+          }
+        });
+      }
+    });
+
+    const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
+    const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
+    const order = [...prepOrder, ...recipeOrder];
+    
+    list.sort((a, b) => {
+      const catNameA = categories.find(c => c.id === a._displayCatId)?.name || '';
+      const catNameB = categories.find(c => c.id === b._displayCatId)?.name || '';
+      const idxA = order.indexOf(catNameA);
+      const idxB = order.indexOf(catNameB);
+      const posA = idxA === -1 ? 999 : idxA;
+      const posB = idxB === -1 ? 999 : idxB;
+      
+      if (posA !== posB) return posA - posB;
+      
+      return preps.findIndex(p => p.id === a.id) - preps.findIndex(p => p.id === b.id);
+    });
+
+    return list;
+  }, [preps, searchText, selectedCategory, categories]);
 
   return (
     <div className="animate-fade-in">
@@ -351,14 +387,14 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
             gap: '20px',
           }}>
-            {filteredPreps.length === 0 ? (
+            {displayPreps.length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
                 仕込みレシピが登録されていません。
               </div>
             ) : (
-              filteredPreps.map(prep => (
+              displayPreps.map(prep => (
                 <div 
-                  key={prep.id} 
+                  key={`${prep.id}-${prep._displayCatId}`} 
                   className="glass-panel" 
                   onClick={() => handleOpenDetail(prep)}
                   draggable={canEdit && searchText === '' && selectedCategory === 'all'}
@@ -391,7 +427,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
-                        {getCategoryName(prep.categoryId)}
+                        {categories.find(c => c.id === prep._displayCatId)?.name || '未設定'}
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         <Clock size={12} />
