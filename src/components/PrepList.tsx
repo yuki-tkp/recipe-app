@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Plus, 
@@ -26,6 +26,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
   // 画面遷移ステート: 'list' | 'detail' | 'create'
   const [viewMode, setViewMode] = useState<'list' | 'detail' | 'create'>('list');
   const [selectedPrepId, setSelectedPrepId] = useState<string | null>(null);
+  const scrollPositionRef = useRef(0);
   
   // フィルター
   const [searchText, setSearchText] = useState('');
@@ -71,6 +72,16 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     return store.subscribe(loadData);
   }, []);
 
+  useEffect(() => {
+    if (viewMode === 'list') {
+      setTimeout(() => {
+        window.scrollTo(0, scrollPositionRef.current);
+      }, 0);
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [viewMode]);
+
   // 編集開始
   const handleOpenDetail = (prep: Prep) => {
     setSelectedPrepId(prep.id);
@@ -91,6 +102,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     setNewInstruction('');
     setNewIngredientSearch('');
     setSelectedIngredient(null);
+    scrollPositionRef.current = window.scrollY;
     setViewMode('detail');
   };
 
@@ -113,6 +125,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     setNewInstruction('');
     setNewIngredientSearch('');
     setSelectedIngredient(null);
+    scrollPositionRef.current = window.scrollY;
     setViewMode('create');
   };
 

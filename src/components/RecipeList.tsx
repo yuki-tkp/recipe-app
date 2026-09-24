@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Plus, 
@@ -33,6 +33,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
   
   // 画面遷移ステート: 'list' | 'detail' | 'create'
   const [viewMode, setViewMode] = useState<'list' | 'detail' | 'create'>('list');
+  const scrollPositionRef = useRef(0);
 
   // 印刷モード設定
   const [printMode, setPrintMode] = useState(false);
@@ -94,6 +95,16 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
     return unsub;
   }, [selectedRecipeId]);
 
+  useEffect(() => {
+    if (viewMode === 'list') {
+      setTimeout(() => {
+        window.scrollTo(0, scrollPositionRef.current);
+      }, 0);
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [viewMode]);
+
   const handleOpenDetail = (recipe: Recipe) => {
     setFormRecipe({
       id: recipe.id,
@@ -111,6 +122,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
     setNewMaterialSearch('');
     setSelectedMaterial(null);
     setPrintMode(false);
+    scrollPositionRef.current = window.scrollY;
     setViewMode('detail');
   };
 
@@ -131,6 +143,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
     setNewMaterialSearch('');
     setSelectedMaterial(null);
     setPrintMode(false);
+    scrollPositionRef.current = window.scrollY;
     setViewMode('create');
   };
 
