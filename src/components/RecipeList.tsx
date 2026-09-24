@@ -606,7 +606,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                         type="number" 
                         className="input-control" 
                         style={{ fontSize: '1.25rem', fontWeight: 'bold' }}
-                        value={formRecipe.sellingPriceInTax}
+                        value={formRecipe.sellingPriceInTax === 0 ? '' : formRecipe.sellingPriceInTax}
                         onFocus={e => e.target.select()}
                         onChange={e => setFormRecipe({ ...formRecipe, sellingPriceInTax: e.target.value === '' ? 0 : Number(e.target.value) })}
                       />
@@ -833,7 +833,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
                                       type="number" 
                                       step="any"
                                       className="table-input"
-                                      value={item.quantity}
+                                      value={item.quantity === 0 ? '' : item.quantity}
                                       onFocus={e => e.target.select()}
                                       onChange={e => {
                                         const updated = [...formRecipe.items];

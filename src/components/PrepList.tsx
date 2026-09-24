@@ -488,7 +488,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                       min="1"
                       readOnly={!canEdit}
                       style={{ fontSize: '1.25rem', fontWeight: 'bold' }}
-                      value={formPrep.yieldQuantity} 
+                      value={formPrep.yieldQuantity === 0 ? '' : formPrep.yieldQuantity} 
                       onFocus={e => e.target.select()}
                       onChange={e => setFormPrep({ ...formPrep, yieldQuantity: e.target.value === '' ? 0 : Number(e.target.value) })} 
                     />
@@ -744,7 +744,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                                       type="number" 
                                       step="any"
                                       className="table-input"
-                                      value={item.quantity}
+                                      value={item.quantity === 0 ? '' : item.quantity}
                                       onFocus={e => e.target.select()}
                                       onChange={e => {
                                         const updated = [...formPrep.items];
