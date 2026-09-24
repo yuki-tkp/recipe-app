@@ -350,7 +350,7 @@ class DataStore {
   }
 
   private sortCategories() {
-    const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料', 'トッピング', '野菜'];
+    const prepOrder = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
     const recipeOrder = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
     
     this.categories.sort((a, b) => {
@@ -590,10 +590,10 @@ class DataStore {
   }
 
   async runCategoryMigration() {
-    if (localStorage.getItem('category_migration_v5')) return;
+    if (localStorage.getItem('category_migration_v6')) return;
     if (!supabase) return;
 
-    const prepCatNames = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料', 'トッピング', '野菜'];
+    const prepCatNames = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他', '調味料・トッピング・野菜'];
     const recipeCatNames = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
 
     const newCategories = [];
@@ -657,7 +657,7 @@ class DataStore {
     this.preps.sort((a, b) => sortByCatName(a, b, prepCatNames));
     this.recipes.sort((a, b) => sortByCatName(a, b, recipeCatNames));
 
-    localStorage.setItem('category_migration_v5', 'true');
+    localStorage.setItem('category_migration_v6', 'true');
     this.notifyListeners();
   }
 
