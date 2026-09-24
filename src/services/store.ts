@@ -580,7 +580,6 @@ class DataStore {
     this.recipes.sort((a, b) => sortByCatName(a, b, recipeCatNames));
 
     localStorage.setItem('category_migration_v4', 'true');
-    this.saveToLocal();
     this.notifyListeners();
   }
 
