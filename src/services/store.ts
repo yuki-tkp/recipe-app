@@ -162,10 +162,62 @@ class DataStore {
       };
 
       if (cats) {
-        const parsedCats = cats.map(c => ({
+        let parsedCats = cats.map(c => ({
           ...c,
           type: c.id.startsWith('prep_') ? 'prep' : c.id.startsWith('recipe_') ? 'recipe' : 'common'
         }));
+
+        // Deduplicate categories by name and type
+        const seen = new Set<string>();
+        const duplicates: any[] = [];
+        const uniqueCats: any[] = [];
+        const idMapping = new Map<string, string>();
+        
+        for (const cat of parsedCats) {
+          const key = `${cat.type}_${cat.name}`;
+          if (seen.has(key)) {
+            duplicates.push(cat);
+            idMapping.set(cat.id, uniqueCats.find(c => c.type === cat.type && c.name === cat.name)!.id);
+          } else {
+            seen.add(key);
+            uniqueCats.push(cat);
+          }
+        }
+
+        if (duplicates.length > 0 && supabase) {
+          const duplicateIds = duplicates.map(d => d.id);
+          supabase.from('categories').delete().in('id', duplicateIds).then();
+          
+          // Background remap
+          setTimeout(() => {
+            if (!supabase) return;
+            let remapped = false;
+            for (const p of this.preps) {
+              if (p.categoryId && idMapping.has(p.categoryId)) {
+                p.categoryId = idMapping.get(p.categoryId) as string;
+                supabase.from('preps').update({ categoryId: p.categoryId }).eq('id', p.id).then();
+                remapped = true;
+              }
+            }
+            for (const r of this.recipes) {
+              if (r.categoryId && idMapping.has(r.categoryId)) {
+                r.categoryId = idMapping.get(r.categoryId) as string;
+                supabase.from('recipes').update({ categoryId: r.categoryId }).eq('id', r.id).then();
+                remapped = true;
+              }
+            }
+            for (const i of this.ingredients) {
+              if (i.categoryId && idMapping.has(i.categoryId)) {
+                i.categoryId = idMapping.get(i.categoryId) as string;
+                supabase.from('ingredients').update({ categoryId: i.categoryId }).eq('id', i.id).then();
+                remapped = true;
+              }
+            }
+            if (remapped) this.notifyListeners();
+          }, 1000);
+        }
+        
+        parsedCats = uniqueCats;
         this.categories = mergeWithLocalOrder(this.categories, parsedCats as any[]);
       }
       if (supps) this.suppliers = mergeWithLocalOrder(this.suppliers, supps);
