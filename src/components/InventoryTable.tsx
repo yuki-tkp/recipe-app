@@ -174,7 +174,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
             <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>カテゴリ</label>
             <select className="input-control" value={newIng.categoryId} onChange={e => setNewIng({ ...newIng, categoryId: e.target.value })}>
               <option value="">未設定</option>
-              {categories.filter(c => !c.type || c.type === 'prep' || c.type === 'ingredient' || c.type === 'common').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.filter(c => c.type === 'prep' || c.type === 'recipe' || c.type === 'ingredient').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
@@ -236,7 +236,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
           <div className="filter-item filter-item-sm">
             <select className="input-control" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
               <option value="all">すべてのカテゴリ</option>
-              {categories.filter(c => !c.type || c.type === 'prep' || c.type === 'ingredient' || c.type === 'common').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.filter(c => c.type === 'prep' || c.type === 'recipe' || c.type === 'ingredient').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
@@ -307,7 +307,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
             </tr>
           </thead>
           <tbody>
-            {categories.filter(c => !c.type || c.type === 'prep' || c.type === 'ingredient' || c.type === 'common').map(cat => {
+            {categories.filter(c => c.type === 'prep' || c.type === 'recipe' || c.type === 'ingredient').map(cat => {
               // 選択カテゴリフィルターがある場合はそのカテゴリのみ表示
               if (selectedCategory !== 'all' && selectedCategory !== cat.id) return null;
               

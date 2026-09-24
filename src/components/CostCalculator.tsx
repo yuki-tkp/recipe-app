@@ -151,7 +151,7 @@ export const CostCalculator: React.FC<CostCalculatorProps> = ({ settings, onView
           <div className="filter-item filter-item-sm">
             <select className="input-control" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
               <option value="all">すべてのカテゴリ</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.filter(c => c.type === 'prep' || c.type === 'recipe' || c.type === 'ingredient').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
         </div>
