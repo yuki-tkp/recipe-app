@@ -168,7 +168,7 @@ export const IngredientMaster: React.FC<IngredientMasterProps> = ({ settings }) 
 
                     {/* 基準単価 */}
                     <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-good)', fontSize: '1.05em' }}>
-                      {`¥${ing.unitCost.toFixed(3)}`}
+                      {`¥${ing.unitCost.toFixed(1)}`}
                       <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
                         /{ing.baseUnit}
                       </span>

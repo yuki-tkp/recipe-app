@@ -761,7 +761,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
                               </td>
                               {canEdit && (
                                 <td style={{ textAlign: 'right', fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                                  ¥{unitCost.toFixed(3)}
+                                  ¥{unitCost.toFixed(1)}
                                 </td>
                               )}
                               {canEdit && (

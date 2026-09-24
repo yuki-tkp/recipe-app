@@ -276,7 +276,7 @@ export const SupplierManager: React.FC<SupplierManagerProps> = ({ settings }) =>
                             <td>{ing.purchaseQuantity} {ing.purchaseUnit}</td>
                             <td style={{ textAlign: 'right' }}>¥{ing.purchasePriceExTax.toLocaleString()}</td>
                             <td style={{ textAlign: 'center' }}>{ing.baseUnit}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-good)' }}>¥{ing.unitCost.toFixed(3)}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-good)' }}>¥{ing.unitCost.toFixed(1)}</td>
                           </tr>
                         ))}
                       </tbody>
