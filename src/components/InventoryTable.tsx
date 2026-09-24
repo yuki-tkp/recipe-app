@@ -307,12 +307,14 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
             </tr>
           </thead>
           <tbody>
-            {categories.filter(c => c.type === 'prep' || c.type === 'recipe' || c.type === 'ingredient').map(cat => {
+            {categories.filter(c => {
+              const ingsInCat = groupedIngredients[c.id] || [];
+              return ingsInCat.length > 0;
+            }).map(cat => {
               // 選択カテゴリフィルターがある場合はそのカテゴリのみ表示
               if (selectedCategory !== 'all' && selectedCategory !== cat.id) return null;
               
               const ingsInCat = groupedIngredients[cat.id] || [];
-              if (ingsInCat.length === 0) return null;
 
               return (
                 <React.Fragment key={cat.id}>
