@@ -23,6 +23,7 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ settings }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCatName, setNewCatName] = useState('');
+  const [newCatType, setNewCatType] = useState<'prep' | 'recipe' | 'common'>('common');
   
   // カテゴリ編集用
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings }) => {
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
-    store.createCategory(newCatName.trim());
+    store.createCategory(newCatName.trim(), newCatType);
     setNewCatName('');
   };
 
@@ -126,12 +127,23 @@ export const Settings: React.FC<SettingsProps> = ({ settings }) => {
           
           {canEdit && (
             <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <select 
+                className="input-control" 
+                value={newCatType} 
+                onChange={e => setNewCatType(e.target.value as any)}
+                style={{ width: '120px' }}
+              >
+                <option value="common">共通</option>
+                <option value="prep">仕込み用</option>
+                <option value="recipe">提供用</option>
+              </select>
               <input 
                 type="text" 
                 className="input-control" 
                 placeholder="新しいカテゴリ名..." 
                 value={newCatName}
                 onChange={e => setNewCatName(e.target.value)}
+                style={{ flex: 1 }}
               />
               <button type="submit" className="btn btn-primary">
                 <Plus size={16} /> 追加
@@ -153,7 +165,12 @@ export const Settings: React.FC<SettingsProps> = ({ settings }) => {
                           onChange={e => setEditName(e.target.value)}
                         />
                       ) : (
-                        <span style={{ fontWeight: 600 }}>{cat.name}</span>
+                        <span style={{ fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.8em', color: 'var(--text-secondary)', marginRight: '8px' }}>
+                            [{cat.type === 'prep' ? '仕込み' : cat.type === 'recipe' ? '提供' : cat.type === 'ingredient' ? '食材' : '共通'}]
+                          </span>
+                          {cat.name}
+                        </span>
                       )}
                     </td>
                     {canEdit && (

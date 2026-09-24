@@ -1,6 +1,7 @@
 export interface Category {
   id: string;
   name: string;
+  type?: 'prep' | 'recipe' | 'ingredient' | 'common';
 }
 
 export interface Supplier {

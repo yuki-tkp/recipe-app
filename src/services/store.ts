@@ -161,7 +161,13 @@ class DataStore {
         });
       };
 
-      if (cats) this.categories = mergeWithLocalOrder(this.categories, cats);
+      if (cats) {
+        const parsedCats = cats.map(c => ({
+          ...c,
+          type: c.id.startsWith('prep_') ? 'prep' : c.id.startsWith('recipe_') ? 'recipe' : 'common'
+        }));
+        this.categories = mergeWithLocalOrder(this.categories, parsedCats as any[]);
+      }
       if (supps) this.suppliers = mergeWithLocalOrder(this.suppliers, supps);
       if (ings) this.ingredients = mergeWithLocalOrder(this.ingredients, ings, sortByCat);
       if (preps) this.preps = mergeWithLocalOrder(this.preps, preps, sortByCat);
@@ -178,6 +184,8 @@ class DataStore {
         localStorage.setItem('has_sorted_by_category_v3', 'true');
       }
       // --------------------------------------------------------
+
+      await this.runCategoryMigration();
 
       this.recalculateAll();
       this.notifyListeners();
@@ -482,9 +490,9 @@ class DataStore {
     }
   }
 
-  createCategory(name: string) {
-    const id = 'cat_' + Math.random().toString(36).substr(2, 9);
-    this.categories.push({ id, name });
+  createCategory(name: string, type: 'prep' | 'recipe' | 'ingredient' | 'common' = 'common') {
+    const id = (type !== 'common' ? `${type}_` : 'cat_') + Math.random().toString(36).substr(2, 9);
+    this.categories.push({ id, name, type });
     this.notifyListeners();
     if (supabase) {
       supabase.from('categories').insert({ id, name }).then();
@@ -501,6 +509,79 @@ class DataStore {
         supabase.from('categories').update({ name }).eq('id', id).then();
       }
     }
+  }
+
+  async runCategoryMigration() {
+    if (localStorage.getItem('category_migration_v4')) return;
+    if (!supabase) return;
+
+    const prepCatNames = ['未設定', '乾物・缶詰・常温食材', 'ソース・ドレッシング', '油脂', '粉', '調味料・香辛料', '冷凍', '冷蔵', '精肉', '青果', 'その他'];
+    const recipeCatNames = ['未設定', 'チャージ', 'クイック', 'アラカルト', 'サラダ', 'フライ', 'ミート', 'パスタ・ピザ'];
+
+    const newCategories = [];
+    
+    // Create new categories if they don't exist
+    for (const name of prepCatNames) {
+      if (!this.categories.some(c => c.name === name && c.type === 'prep')) {
+        const id = `prep_${Math.random().toString(36).substr(2, 9)}`;
+        newCategories.push({ id, name, type: 'prep' });
+        this.categories.push({ id, name, type: 'prep' });
+      }
+    }
+    
+    for (const name of recipeCatNames) {
+      if (!this.categories.some(c => c.name === name && c.type === 'recipe')) {
+        const id = `recipe_${Math.random().toString(36).substr(2, 9)}`;
+        newCategories.push({ id, name, type: 'recipe' });
+        this.categories.push({ id, name, type: 'recipe' });
+      }
+    }
+
+    if (newCategories.length > 0) {
+      const inserts = newCategories.map(c => ({ id: c.id, name: c.name }));
+      await supabase.from('categories').insert(inserts);
+    }
+
+    const prepUnset = this.categories.find(c => c.name === '未設定' && c.type === 'prep');
+    const recipeUnset = this.categories.find(c => c.name === '未設定' && c.type === 'recipe');
+
+    const prepUpdates = [];
+    for (const p of this.preps) {
+      if (!this.categories.some(c => c.id === p.categoryId && c.type === 'prep') && prepUnset) {
+        p.categoryId = prepUnset.id;
+        prepUpdates.push(supabase.from('preps').update({ categoryId: prepUnset.id }).eq('id', p.id));
+      }
+    }
+
+    const recipeUpdates = [];
+    for (const r of this.recipes) {
+      if (!this.categories.some(c => c.id === r.categoryId && c.type === 'recipe') && recipeUnset) {
+        r.categoryId = recipeUnset.id;
+        recipeUpdates.push(supabase.from('recipes').update({ categoryId: recipeUnset.id }).eq('id', r.id));
+      }
+    }
+
+    if (prepUpdates.length > 0 || recipeUpdates.length > 0) {
+      await Promise.all([...prepUpdates, ...recipeUpdates]);
+    }
+
+    const sortByCatName = (a: any, b: any, order: string[]) => {
+      const catA = this.categories.find(c => c.id === a.categoryId)?.name || '';
+      const catB = this.categories.find(c => c.id === b.categoryId)?.name || '';
+      const indexA = order.indexOf(catA);
+      const indexB = order.indexOf(catB);
+      if (indexA === -1 && indexB === -1) return catA.localeCompare(catB, 'ja');
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    };
+
+    this.preps.sort((a, b) => sortByCatName(a, b, prepCatNames));
+    this.recipes.sort((a, b) => sortByCatName(a, b, recipeCatNames));
+
+    localStorage.setItem('category_migration_v4', 'true');
+    this.saveToLocal();
+    this.notifyListeners();
   }
 
   deleteCategory(id: string) {
