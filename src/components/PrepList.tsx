@@ -229,8 +229,9 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     setFormPrep({ ...formPrep, items: updated });
   };
 
-  const getCategoryName = (id: string) => {
-    return categories.find(c => c.id === id)?.name || '未分類';
+  const getCategoryName = (id: string | undefined | null) => {
+    if (!id) return '未設定';
+    return id.split(',').map(catId => categories.find(c => c.id === catId)?.name || '未設定').join(', ');
   };
 
   const getIngredientName = (item: PrepItem) => {
@@ -282,7 +283,7 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
   // フィルタリングされた一覧
   const filteredPreps = preps.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || p.categoryId === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || (p.categoryId || '').split(',').includes(selectedCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -457,15 +458,37 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>カテゴリ</label>
-                    <select 
-                      className="input-control" 
-                      value={formPrep.categoryId} 
-                      disabled={!canEdit}
-                      onChange={e => setFormPrep({ ...formPrep, categoryId: e.target.value })}
-                    >
-                      {categories.filter(c => c.type === 'prep' || c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>カテゴリ (最大2つ)</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select 
+                        className="input-control" 
+                        value={(formPrep.categoryId || '').split(',')[0] || ''} 
+                        disabled={!canEdit}
+                        onChange={e => {
+                          const cat2 = (formPrep.categoryId || '').split(',')[1];
+                          setFormPrep({ ...formPrep, categoryId: [e.target.value, cat2].filter(Boolean).join(',') })
+                        }}
+                      >
+                        <option value="">（選択）</option>
+                        {categories.filter(c => c.type === 'prep' || c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <select 
+                        className="input-control" 
+                        value={(formPrep.categoryId || '').split(',')[1] || ''} 
+                        disabled={!canEdit}
+                        onChange={e => {
+                          const cat1 = (formPrep.categoryId || '').split(',')[0];
+                          if (!cat1) {
+                            setFormPrep({ ...formPrep, categoryId: e.target.value });
+                          } else {
+                            setFormPrep({ ...formPrep, categoryId: [cat1, e.target.value].filter(Boolean).join(',') })
+                          }
+                        }}
+                      >
+                        <option value="">（なし）</option>
+                        {categories.filter(c => c.type === 'prep' || c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>保存期間</label>

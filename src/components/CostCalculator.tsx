@@ -34,8 +34,9 @@ export const CostCalculator: React.FC<CostCalculatorProps> = ({ settings, onView
     return store.subscribe(loadData);
   }, []);
 
-  const getCategoryName = (id: string) => {
-    return categories.find(c => c.id === id)?.name || '未分類';
+  const getCategoryName = (id: string | undefined | null) => {
+    if (!id) return '未設定';
+    return id.split(',').map(catId => categories.find(c => c.id === catId)?.name || '未設定').join(', ');
   };
 
   const getCostRateClass = (rate: number) => {

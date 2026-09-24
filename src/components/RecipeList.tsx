@@ -235,8 +235,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
     setFormRecipe({ ...formRecipe, items: updated });
   };
 
-  const getCategoryName = (id: string) => {
-    return categories.find(c => c.id === id)?.name || '未分類';
+  const getCategoryName = (id: string | undefined | null) => {
+    if (!id) return '未設定';
+    return id.split(',').map(catId => categories.find(c => c.id === catId)?.name || '未設定').join(', ');
   };
 
   const getMaterialName = (item: RecipeItem) => {
@@ -289,7 +290,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
   // フィルタリング
   const filteredRecipes = recipes.filter(r => {
     const matchesSearch = r.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || r.categoryId === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || (r.categoryId || '').split(',').includes(selectedCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -327,7 +328,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
               <div className="filter-item filter-item-sm">
                 <select className="input-control" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
                   <option value="all">すべてのカテゴリ</option>
-                  {categories.filter(c => c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {categories.filter(c => c.type === 'recipe' || c.type === 'prep').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
             </div>
@@ -573,15 +574,37 @@ export const RecipeList: React.FC<RecipeListProps> = ({ settings, selectedRecipe
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>カテゴリ</label>
-                    <select 
-                      className="input-control" 
-                      value={formRecipe.categoryId} 
-                      disabled={!canEdit}
-                      onChange={e => setFormRecipe({ ...formRecipe, categoryId: e.target.value })}
-                    >
-                      {categories.filter(c => c.type === 'recipe').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>カテゴリ (最大2つ)</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select 
+                        className="input-control" 
+                        value={(formRecipe.categoryId || '').split(',')[0] || ''} 
+                        disabled={!canEdit}
+                        onChange={e => {
+                          const cat2 = (formRecipe.categoryId || '').split(',')[1];
+                          setFormRecipe({ ...formRecipe, categoryId: [e.target.value, cat2].filter(Boolean).join(',') })
+                        }}
+                      >
+                        <option value="">（選択）</option>
+                        {categories.filter(c => c.type === 'recipe' || c.type === 'prep').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <select 
+                        className="input-control" 
+                        value={(formRecipe.categoryId || '').split(',')[1] || ''} 
+                        disabled={!canEdit}
+                        onChange={e => {
+                          const cat1 = (formRecipe.categoryId || '').split(',')[0];
+                          if (!cat1) {
+                            setFormRecipe({ ...formRecipe, categoryId: e.target.value });
+                          } else {
+                            setFormRecipe({ ...formRecipe, categoryId: [cat1, e.target.value].filter(Boolean).join(',') })
+                          }
+                        }}
+                      >
+                        <option value="">（なし）</option>
+                        {categories.filter(c => c.type === 'recipe' || c.type === 'prep').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>公開設定</label>
