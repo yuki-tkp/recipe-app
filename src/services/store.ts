@@ -648,8 +648,12 @@ class DataStore {
     }
 
     const sortByCatName = (a: any, b: any, order: string[]) => {
-      const catA = this.categories.find(c => c.id === a.categoryId)?.name || '';
-      const catB = this.categories.find(c => c.id === b.categoryId)?.name || '';
+      const getFirstCatName = (catId: string) => {
+        const id = (catId || '').split(',')[0];
+        return this.categories.find(c => c.id === id)?.name || '';
+      };
+      const catA = getFirstCatName(a.categoryId);
+      const catB = getFirstCatName(b.categoryId);
       const indexA = order.indexOf(catA);
       const indexB = order.indexOf(catB);
       if (indexA === -1 && indexB === -1) return catA.localeCompare(catB, 'ja');
