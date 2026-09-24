@@ -73,11 +73,14 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
   }, []);
 
   useEffect(() => {
+    const mainContent = document.querySelector('.main-content');
     if (viewMode === 'list') {
       setTimeout(() => {
+        if (mainContent) mainContent.scrollTo(0, scrollPositionRef.current);
         window.scrollTo(0, scrollPositionRef.current);
       }, 0);
     } else {
+      if (mainContent) mainContent.scrollTo(0, 0);
       window.scrollTo(0, 0);
     }
   }, [viewMode]);
@@ -102,7 +105,8 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     setNewInstruction('');
     setNewIngredientSearch('');
     setSelectedIngredient(null);
-    scrollPositionRef.current = window.scrollY;
+    const mainContent = document.querySelector('.main-content');
+    scrollPositionRef.current = mainContent ? mainContent.scrollTop : window.scrollY;
     setViewMode('detail');
   };
 
@@ -125,7 +129,8 @@ export const PrepList: React.FC<PrepListProps> = ({ settings }) => {
     setNewInstruction('');
     setNewIngredientSearch('');
     setSelectedIngredient(null);
-    scrollPositionRef.current = window.scrollY;
+    const mainContent = document.querySelector('.main-content');
+    scrollPositionRef.current = mainContent ? mainContent.scrollTop : window.scrollY;
     setViewMode('create');
   };
 
