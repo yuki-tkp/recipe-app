@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, FileText } from 'lucide-react';
+import { Search, Database, FileText, Printer } from 'lucide-react';
 import { store, SystemSettings } from '../services/store';
 import { Ingredient, Category, Supplier } from '../types';
 
@@ -52,13 +52,87 @@ export const IngredientMaster: React.FC<IngredientMasterProps> = ({ settings }) 
     return matchesSearch && matchesCategory && matchesSupplier && ing.status === 'active';
   });
 
+  // A4印刷
+  const handlePrint = () => {
+    const esc = (s: string) =>
+      s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+    const rows = [...filtered]
+      .sort((a, b) =>
+        getSupplierName(a.supplierId).localeCompare(getSupplierName(b.supplierId), 'ja') ||
+        a.name.localeCompare(b.name, 'ja'))
+      .map((ing, i) => `
+        <tr>
+          <td class="c">${i + 1}</td>
+          <td>${esc(ing.name)}</td>
+          <td>${esc(getCategoryName(ing.categoryId))}</td>
+          <td>${esc(getSupplierName(ing.supplierId))}</td>
+          <td class="r">${ing.purchaseQuantity} ${esc(ing.purchaseUnit)}</td>
+          <td class="r">¥${ing.purchasePriceExTax.toLocaleString()}</td>
+          <td class="r">¥${ing.unitCost.toFixed(1)}/${esc(ing.baseUnit)}</td>
+          <td>${esc(ing.memo || '')}</td>
+        </tr>`).join('');
+
+    const cond = [
+      selectedCategory !== 'all' ? `カテゴリ: ${getCategoryName(selectedCategory)}` : '',
+      selectedSupplier !== 'all' ? `発注先: ${getSupplierName(selectedSupplier)}` : '',
+      searchText ? `検索: ${searchText}` : '',
+    ].filter(Boolean).join(' / ');
+
+    const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>食材一覧表</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif; color: #000; margin: 0; font-size: 9.5pt; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 6px; }
+  h1 { font-size: 15pt; margin: 0; }
+  .meta { font-size: 8.5pt; text-align: right; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid #555; padding: 3px 5px; vertical-align: middle; }
+  th { background: #e8e8e8; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tbody tr:nth-child(even) td { background: #f6f6f6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .c { text-align: center; } .r { text-align: right; white-space: nowrap; }
+</style></head><body>
+<header>
+  <h1>食材一覧表（仕入単価）</h1>
+  <div class="meta">出力日: ${new Date().toLocaleDateString('ja-JP')}　件数: ${filtered.length}件${cond ? `<br>${esc(cond)}` : ''}</div>
+</header>
+<table>
+  <thead><tr>
+    <th style="width:6%">No</th><th style="width:24%">商品名</th><th style="width:11%">カテゴリ</th>
+    <th style="width:15%">発注先</th><th style="width:11%">仕入単位</th><th style="width:11%">単価(税別)</th>
+    <th style="width:11%">基準単価</th><th>備考</th>
+  </tr></thead>
+  <tbody>${rows || '<tr><td colspan="8" class="c">該当する食材がありません</td></tr>'}</tbody>
+</table>
+<script>window.onload = () => { window.print(); };<\/script>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { alert('ポップアップがブロックされました。許可してから再度お試しください。'); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
+
   return (
     <div className="animate-fade-in">
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>基準食材単価マスタ</h2>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
-          棚卸表の仕入価格から、レシピや仕込み原価計算で使用する「1gあたり単価」「1mlあたり単価」等の基準単価を自動生成します
-        </p>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>基準食材単価マスタ</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+            棚卸表の仕入価格から、レシピや仕込み原価計算で使用する「1gあたり単価」「1mlあたり単価」等の基準単価を自動生成します
+          </p>
+        </div>
+        <button
+          id="print-ingredient-list"
+          className="btn btn-primary no-print"
+          onClick={handlePrint}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+        >
+          <Printer size={16} /> 一覧を印刷 (A4)
+        </button>
       </div>
 
       {/* 検索・フィルターパネル */}
