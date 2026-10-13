@@ -451,7 +451,14 @@ class DataStore {
       this.notifyListeners();
       
       if (supabase) {
-        supabase.from('ingredients').update(updated).eq('id', id).then();
+        const recalced = this.ingredients[idx];
+        supabase.from('ingredients').update({
+          ...updated,
+          baseUnit: recalced.baseUnit,
+          unitCost: recalced.unitCost,
+          purchasePriceInTax: recalced.purchasePriceInTax,
+          updatedAt: recalced.updatedAt,
+        }).eq('id', id).then();
       }
     }
   }

@@ -54,6 +54,8 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
     return store.subscribe(loadData);
   }, []);
 
+  const UNIT_OPTIONS = ['g', 'kg', 'ml', 'L', '個', '本', '枚', '袋', 'パック', '束', '缶', 'ケース'];
+
   const handleUpdate = (id: string, field: keyof Ingredient, value: any) => {
     if (!canEdit) return;
     
@@ -191,7 +193,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
           <div>
             <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>容量単位</label>
             <select className="input-control" value={newIng.purchaseUnit} onChange={e => setNewIng({ ...newIng, purchaseUnit: e.target.value })}>
-              {['g', 'kg', 'ml', 'L', '個', '本', '枚', '袋', 'パック', '束', '缶', 'ケース'].map(u => <option key={u} value={u}>{u}</option>)}
+              {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
             </select>
           </div>
           <div>
@@ -390,7 +392,10 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ settings }) => {
                               value={ing.purchaseUnit}
                               onChange={e => handleUpdate(ing.id, 'purchaseUnit', e.target.value)}
                             >
-                              {['g', 'kg', 'ml', 'L', '個', '本', '枚', '袋', 'パック', '束', '缶', 'ケース'].map(u => (
+                              {!UNIT_OPTIONS.includes(ing.purchaseUnit) && (
+                                <option value={ing.purchaseUnit} style={{ background: '#1e293b' }}>{ing.purchaseUnit}（要変更）</option>
+                              )}
+                              {UNIT_OPTIONS.map(u => (
                                 <option key={u} value={u} style={{ background: '#1e293b' }}>{u}</option>
                               ))}
                             </select>
